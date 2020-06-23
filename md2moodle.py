@@ -53,6 +53,8 @@ CONFIG = {
     
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
+    # quiz shuffle answers | 1 -> true ; 0 -> false
+    'shuffle_answers' : '1',
 
     # pygments code snapshot generator
     'pygments.font_size' : 16,
@@ -182,7 +184,8 @@ def render_question(text, md_dir_path):
 def markdown_custom(text):
     """Just calls markdown, but may be extended in the future."""
     #return markdown(text, extensions=['tables'])
-    return markdown(text)
+    return markdown(text, extensions=['nl2br'])
+    #return markdown(text)
 
 def replace_latex(match):
     code = match.group(1)
@@ -313,6 +316,7 @@ class Quiz(dict):
     def append_to_question(self, line): 
         """Appends content to current question."""
 
+        #TODO: there's a problem enforcing line breaks in the output
         self.current_question['text'] += line + '\n'
 
     def consume_answer(self, line):
@@ -465,9 +469,9 @@ def question_to_xml(question, index, md_dir_path):
         xml += answer_to_xml(answer)
     
     # other properties
-    xml += '<shuffleanswers>1</shuffleanswers>'
+    xml += '<shuffleanswers>' + CONFIG['shuffle_answers'] + '</shuffleanswers>'
     xml += '<single>' + question_single_status + '</single>'
-    xml += '<answernumbering>' + CONFIG['answer_numbering'] +'</answernumbering>'
+    xml += '<answernumbering>' + CONFIG['answer_numbering'] + '</answernumbering>'
     xml += '</question>'
     return xml
 
