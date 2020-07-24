@@ -73,7 +73,7 @@ What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the
     - `s1 = {} e s2 = {6}`
     - Other answer
 
-* Consider the parcial specification of the ADT Complex and the following code:
+* Consider the parcial specification of the ADT Complex:
 
 ```cpp{img}
 #define COMPLEX_OK      0
@@ -89,9 +89,11 @@ What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the
  * @return COMPLEX_NULL if 'c' is NULL
  */
 int complexIm (PtComplex c, double *im);
+```
 
-//----
+And the following code:
 
+```cpp{img}
 PtComplex a = complexCreate(1, 8);
 ```
 
