@@ -56,6 +56,9 @@ CONFIG = {
     # quiz shuffle answers | 1 -> true ; 0 -> false
     'shuffle_answers' : '1',
 
+    # in single answer questions, the penalty to apply to a wrong answer in % [0,1]
+    'single_answer_penalty_weight' : 0, #e.g., 0.25 = 25% 
+
     # pygments code snapshot generator
     'pygments.font_size' : 16,
     'pygments.line_numbers' : False,
@@ -63,6 +66,7 @@ CONFIG = {
     # pygments code snapshot | additional dump to disk of generated images
     'pygments.dump_image' : False,
     'pygments.dump_image_id' : 1, #e,g, 1.png and incremented for each image
+
 }
 
 ######################################################################
@@ -374,7 +378,10 @@ class Quiz(dict):
                     if answer['correct']:
                         answer['weight'] = weight
                     else:
-                        answer['weight'] = 0
+                        if question['single']:
+                            answer['weight'] = CONFIG['single_answer_penalty_weight'] * -1
+                        else:
+                            answer['weight'] = 0
 
     def export_xml_to_file(self, md_file_name):
         """Produces the XML file outputs; one for each specified category in the md file."""
