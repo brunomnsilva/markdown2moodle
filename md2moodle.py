@@ -38,6 +38,10 @@ import json
 import base64
 from markdown import markdown
 
+# To prettify xml
+import xml.dom.minidom
+
+
 if sys.version_info[0] == 3:
     from urllib.request import urlopen
 else:
@@ -391,7 +395,12 @@ class Quiz(dict):
             for section_caption in self:
                 section = self[section_caption]
                 xml_file = open(create_output_filename(md_file_name, section_caption), 'w')
-                xml_file.write(section_to_xml(section_caption, section, md_dir_path))
+                # xml_file.write(section_to_xml(section, md_dir_path))
+                # Prettify xml
+                tmp = xml.dom.minidom.parseString(section_to_xml(section_caption, section, md_dir_path))
+                xml_file.write(tmp.toprettyxml())
+
+                # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
 
         else:
             print("Quiz is not marked as valid for export.")
