@@ -210,7 +210,7 @@ def replace_latex_double_dollars(match):
     code = match.group(1)
 
     # Replace \\ by \\\\ in code
-    code = code.replace("\\", "\\\\")
+    code = code.replace(r"\\", r"\\\\ ")
 
     # Remove unnecessary spaces and new lines in order to have \[math_formula\]
     return "\n \\\\[" +  code.strip() + "\\\\] \n"
