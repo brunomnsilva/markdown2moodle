@@ -38,6 +38,10 @@ import json
 import base64
 from markdown import markdown
 
+# To prettify xml
+import xml.dom.minidom
+
+
 if sys.version_info[0] == 3:
     from urllib.request import urlopen
 else:
@@ -86,8 +90,16 @@ EMPTY_LINE_PATTERN = re.compile(r'^\s*$')
 IMAGE_PATTERN = re.compile(r'!\[.*\]\((.+)\)')
 MULTI_LINE_CODE_PATTERN = re.compile(r'```(.*)\n([\s\S]+?)```', re.MULTILINE)
 SINGLE_LINE_CODE_PATTERN = re.compile(r'`([^`]+)`')
-SINGLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$(.+)\$')
-DOUBLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$\$(.+)\$\$', re.MULTILINE)
+# question mark in the regex implies that it is not greedy
+# If you have ... $...$ ... $...$..., with the question mark, both parts will be replaced, giving ... REPL ... REPL   ...
+# Without question mark, you have one replacement from the first to the last $.
+SINGLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$(.+?)\$')
+# re.DOTALL implies that meta character . also corresponds to \n
+# Hence, between $$ and $$, there may have several lines
+# question mark in the regex implies that it is not greedy
+# If you have ... $$...$$ ... $$...$$..., with the question mark, both parts will be replaced, giving ... REPL ... REPL   ...
+# Without question mark, you have one replacement from the first to the last $$.
+DOUBLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$\$(.+?)\$\$', re.DOTALL)
 BLOCKCODE_PATTERN = re.compile(r'^(\s*)```(.*)$')
 
 ##
@@ -180,7 +192,7 @@ def render_question(text, md_dir_path):
     text = re.sub(MULTI_LINE_CODE_PATTERN, replace_multi_line_code, text)
     text = re.sub(SINGLE_LINE_CODE_PATTERN, replace_single_line_code, text)
     text = re.sub(IMAGE_PATTERN, replace_image_wrapper(md_dir_path), text)
-    text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
+    text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, replace_latex_double_dollars, text)
     text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
     text = wrap_cdata( markdown_custom(text) )
     return text
@@ -188,8 +200,21 @@ def render_question(text, md_dir_path):
 def markdown_custom(text):
     """Just calls markdown, but may be extended in the future."""
     #return markdown(text, extensions=['tables'])
-    return markdown(text, extensions=['nl2br'])
-    #return markdown(text)
+    # return markdown(text, extensions=['nl2br'])
+    return markdown(text)
+#TODO: Now, remove nl2br extension to allow writing math formulas using several lines but maybe it is preferable to remove new lines (replaced by spaces) before processing math formulas and put again the extension.
+
+
+def replace_latex_double_dollars(match):
+    # Take the part without the $$ at the beginning and at the end
+    code = match.group(1)
+
+    # Replace \\ by \\\\ in code
+    code = code.replace(r"\\", r"\\\\ ")
+
+    # Remove unnecessary spaces and new lines in order to have \[math_formula\]
+    return "\n \\\\[" +  code.strip() + "\\\\] \n"
+
 
 def replace_latex(match):
     code = match.group(1)
@@ -391,7 +416,12 @@ class Quiz(dict):
             for section_caption in self:
                 section = self[section_caption]
                 xml_file = open(create_output_filename(md_file_name, section_caption), 'w')
-                xml_file.write(section_to_xml(section_caption, section, md_dir_path))
+                # xml_file.write(section_to_xml(section, md_dir_path))
+                # Prettify xml
+                tmp = xml.dom.minidom.parseString(section_to_xml(section_caption, section, md_dir_path))
+                xml_file.write(tmp.toprettyxml())
+
+                # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
 
         else:
             print("Quiz is not marked as valid for export.")
