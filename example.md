@@ -38,7 +38,7 @@ Mark the correct statements about `fib(n)`:
 
     - !It has $O(2^n)$ time complexity
 
-# DummyCategory/Subcategory
+# DummyCategory/Programming/ADT
 
 * What's the *access policy* of the ADT Queue?
     - !FIFO
@@ -112,3 +112,24 @@ Which one would you choose for better eficiency?
     - !Approach **A**
     - Approach **B**
 
+# DummyCategory/Math
+
+* Is the problem
+
+$$
+\begin{array}{ll}
+\max & 8x_1 + 3 x_2\\ 
+s.t. & 3 x_1 + 8 x_2 \leq 9\\
+& x_1 * x_2 \leq 20\\
+& x \geq 0
+\end{array}
+$$
+
+a linear optimization problem ?
+    - yes
+    - !no
+
+* What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
+    - $x = (\frac{8}{3},0)$
+    - $x = (\frac{4}{3},1)$
+    - !$x(\frac{8}{5}, \frac{4}{5})$

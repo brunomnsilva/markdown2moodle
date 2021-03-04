@@ -30,7 +30,7 @@ A full example using all available features is avalable in *example.md*, which y
 Nonetheless, a portion of it to illustrate the quiz format in markdown is presented below:
 
 ```markdown
-# DummyCategory/Programming
+# DummyCategory/Programming/ADT
 
 * Consider the following function:
 
@@ -144,7 +144,7 @@ a linear optimization problem ?
 
 * Images are included normally, as in any markdown file, including by an external *url*.
 
-* Code blocks are included using *backticks* followed by the *lexer*, as in any markdown file. If using `{img}` after the lexer, then the code will be converted to a *png* image with syntax highlighting; personally, I prefer this method. Otherwise, it wil be in plain text.
+* Code blocks are included using *backticks* followed by the *lexer*, as in any markdown file. If using `{img}` after the lexer, then the code will be converted to a *png* image with syntax highlighting; personally, I prefer this method. Otherwise, it will be exported in plain text.
 
 All images are encoded to *base64* and included in the output, so the resulting XML is self-contained and ready to import into *Moodle*.
 
