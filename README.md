@@ -30,7 +30,7 @@ A full example using all available features is avalable in *example.md*, which y
 Nonetheless, a portion of it to illustrate the quiz format in markdown is presented below:
 
 ```markdown
-# DummyCategory/Subcategory
+# DummyCategory/Programming
 
 * Consider the following function:
 
@@ -110,6 +110,28 @@ Which one would you choose for better eficiency?
     - !Approach **A**
     - Approach **B**
 
+# DummyCategory/Math
+
+* Is the problem
+
+$$
+\begin{array}{ll}
+\max & 8x_1 + 3 x_2\\ 
+s.t. & 3 x_1 + 8 x_2 \leq 9\\
+& x_1 * x_2 \leq 20\\
+& x \geq 0
+\end{array}
+$$
+
+a linear optimization problem ?
+    - yes
+    - !no
+
+* What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
+    - $x = (\frac{8}{3},0)$
+    - $x = (\frac{4}{3},1)$
+    - !$x(\frac{8}{5}, \frac{4}{5})$
+
 ```
 
 * Categories are specified via *markdown sections*. Note the use of `/` to specify subcategories (you can further create a subcategory of a subcategory).
@@ -126,6 +148,8 @@ Which one would you choose for better eficiency?
 
 All images are encoded to *base64* and included in the output, so the resulting XML is self-contained and ready to import into *Moodle*.
 
+**Important:** Pay particular atention to use spaces after section, question or answers delimiters, e.g., `#`, `*` and `-`.
+
 ## How to Use
 
 ### Prerequistes
@@ -134,19 +158,23 @@ This is a *python* script, so obviously you'll need `python` installed.
 
 You'll also need the following python libraries installed:
 
-* markdown (mandatory) 
+* **markdown** (mandatory) 
 
     - `$> pip install markdown --user`
 
-* pygments (optional, only used to generate images from code blocks)
+* **pygments** (optional, only used to generate images from code blocks)
 
     - `$> pip install pygments --user`
+
+    - which uses **PIL** \[python imaging library\] - check your package manager (e.g., in Debian its `pillow` package)
+
+If other packages are required in your system, you should be able to discern which ones from the error output.
 
 ### Conversion
 
 Just run the script against your markdown file, e.g.:
 
-```
+```markdown
 $> python md2moodle.py example.md
 ```
 
@@ -154,7 +182,7 @@ This will produce the corresponding *Moodle XML* files, one per each category or
 
 * If your markdown file contains any errors, the parser will stop at the first encountered error, telling you which error exists and at which line. Example:
 
-    ```
+    ```markdown
     Error at line 21: Expecting text, codeblock or answer.
     ```
 
@@ -170,6 +198,12 @@ CONFIG = {
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
 
+    # quiz shuffle answers | 1 -> true ; 0 -> false
+    'shuffle_answers' : '1',
+
+    # in single answer questions, the penalty to apply to a wrong answer in % [0,1]
+    'single_answer_penalty_weight' : 0, #e.g., 0.25 = 25% 
+
     # pygments code snapshot generator
     'pygments.font_size' : 16,
     'pygments.line_numbers' : False,
@@ -183,6 +217,12 @@ CONFIG = {
 ## Contribute
 
 You're very welcome to contribute to this project, either via *issues* or **pull request**.
+
+### List of contributors
+
+- [brunomnsilva](https://github.com/brunomnsilva)
+
+- [mathieuLacroix](https://github.com/mathieuLacroix)
 
 ### Technical aspects
 
@@ -206,4 +246,4 @@ In the future I'll be addressing this feature, but feel free to take on the chal
 
 ## License
 
-The code is made available under the *GNU GENERAL PUBLIC LICENSE* -- see *LICENCE.md*.
+The code is made available under the *GNU GENERAL PUBLIC LICENSE* -- see *[LICENCE](LICENSE)*.
