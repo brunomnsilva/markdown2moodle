@@ -15,17 +15,17 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
 * Answers only allow text, latex expressions and inline code;
 
-* Code blocks can be converted into images that are embedded into the XML file. The lexer specifies the language that will be used for syntax highlighting. This happens when using the `{img}` option (see *example.md*);
+* Code blocks can be converted into images that are embedded into the XML file. The lexer specifies the language that will be used for syntax highlighting. This happens when using the `{img}` option (see [example.md](example.md));
 
-* The markdown format and parser only predict **multiple choice** questions at this time, although `true/false` questions can be easily replicated (see *example.md*);
+* The markdown format and parser only predict **multiple choice** questions at this time, although `true/false` questions can be easily replicated (see [example.md](example.md));
 
-* <del>Markdown Tables are not supported yet;</del>  Markdown tables supported through `[[[ ]]]` *custom environment* (see *example.md*)
+* <del>Markdown Tables are not supported yet;</del>  Markdown tables supported through `[[[ ]]]` *custom environment* (see [example.md](example.md))
 
 * Question and answer feedback are not supported yet.
 
 ## Example
 
-A full example using all available features is avalable in *example.md*, which you can test yourself.
+A full example using all available features is avalable in [example.md](example.md), which you can test yourself.
 
 Nonetheless, a portion of it to illustrate the quiz format in markdown is presented below:
 
@@ -205,7 +205,7 @@ CONFIG = {
     
     # Place table borders through css style?
     'table_border' : True,
-    
+
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
 

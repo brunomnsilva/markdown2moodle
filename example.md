@@ -26,7 +26,13 @@ What's its time complexity?
 
 * Consider the following function:
 
-$$fib(n)=\left\{\begin{matrix} 1 & n = 0\\  1 & n = 1\\ fib(n-1) + fib(n-2) & n > 1 \end{matrix}\right.$$
+$$
+fib(n) = \left\{\begin{matrix}
+1 & n = 0\\ 
+1 & n = 1\\ 
+fib(n-1) + fib(n-2) & n > 1 
+\end{matrix}\right.
+$$
 
 Mark the correct statements about `fib(n)`:
 
@@ -91,7 +97,7 @@ What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the
 int complexIm (PtComplex c, double *im);
 ```
 
-And the following code:
+And the following code:  
 
 ```cpp{img}
 PtComplex a = complexCreate(1, 8);
@@ -120,7 +126,7 @@ $$
 \begin{array}{ll}
 \max & 8x_1 + 3 x_2\\ 
 s.t. & 3 x_1 + 8 x_2 \leq 9\\
-& x_1 * x_2 \leq 20\\
+& x_1 \times x_2 \leq 20\\
 & x \geq 0
 \end{array}
 $$
@@ -133,3 +139,26 @@ a linear optimization problem ?
     - $x = (\frac{8}{3},0)$
     - $x = (\frac{4}{3},1)$
     - !$x(\frac{8}{5}, \frac{4}{5})$
+
+# DummyCategory/Tables
+
+* Consider the following *Dijkstra* distance table, starting at *vertex* `A`:
+
+[[[
+Vertex | Distance | Path
+-------|----------|---------
+A      | 0        | $\emptyset$
+B      | 3        | D
+C      | 7        | E
+D      | 1        | A
+E      | 2        | D
+]]]
+
+What's the minimum cost path  
+
+between `A` and `E`?
+
+- A, B, C
+- !A, D, E, C
+- A, B, D, E, C
+- No path exists
