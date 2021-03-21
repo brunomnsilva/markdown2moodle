@@ -54,6 +54,9 @@ else:
 CONFIG = {
     # Produce debugging information while parsing
     'debug' : False,
+
+    # Place table borders through css style?
+    'table_border' : False,
     
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
@@ -101,6 +104,8 @@ SINGLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$(.+?)\$')
 # Without question mark, you have one replacement from the first to the last $$.
 DOUBLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$\$(.+?)\$\$', re.DOTALL)
 BLOCKCODE_PATTERN = re.compile(r'^(\s*)```(.*)$')
+
+TABLE_PATTERN = re.compile(r'\[\[\[(.*)\n([\s\S]+?)\]\]\]', re.MULTILINE)
 
 ##
 # Regex helpers
@@ -177,7 +182,7 @@ def sanitize_entities(text):
     return text
 
 def render_answer(text):
-    """Replaces any allowed contents, e.g., code and images
+    """Replaces any allowed contents, e.g., text, inline code and formulas
      and returns the CDATA content."""
 
     text = re.sub(SINGLE_LINE_CODE_PATTERN, replace_single_line_code, text)
@@ -194,15 +199,34 @@ def render_question(text, md_dir_path):
     text = re.sub(IMAGE_PATTERN, replace_image_wrapper(md_dir_path), text)
     text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, replace_latex_double_dollars, text)
     text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
+    text = re.sub(TABLE_PATTERN, replace_table, text)
     text = wrap_cdata( markdown_custom(text) )
     return text
 
 def markdown_custom(text):
     """Just calls markdown, but may be extended in the future."""
-    #return markdown(text, extensions=['tables'])
-    # return markdown(text, extensions=['nl2br'])
     return markdown(text)
-#TODO: Now, remove nl2br extension to allow writing math formulas using several lines but maybe it is preferable to remove new lines (replaced by spaces) before processing math formulas and put again the extension.
+    
+def replace_table(match):
+    content = match.group(2)
+
+    html = markdown(content, extensions=['tables'])
+
+    if not CONFIG['table_border']:
+        return html
+
+    # Put borders on table. This is not a content issue,
+    # but rather a presentation one. However, the rendering
+    # is nicer for a quiz environment.
+    css_style = """
+        <style type="text/css">
+            div.border_table + table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            }
+        </style>"""
+
+    return css_style + r"<div class='border_table'>" + html + r"</div>"
 
 
 def replace_latex_double_dollars(match):
@@ -211,6 +235,11 @@ def replace_latex_double_dollars(match):
 
     # Replace \\ by \\\\ in code
     code = code.replace(r"\\", r"\\\\ ")
+
+    # Replace '\{' by '\\{' and '\}' by '\\}'
+    # This must be done after the previous replacement.
+    code = code.replace(r'\{', r'\\{')
+    code = code.replace(r'\}', r'\\}')
 
     # Remove unnecessary spaces and new lines in order to have \[math_formula\]
     return "\n \\\\[" +  code.strip() + "\\\\] \n"

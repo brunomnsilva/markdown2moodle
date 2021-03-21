@@ -19,7 +19,7 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
 * The markdown format and parser only predict **multiple choice** questions at this time, although `true/false` questions can be easily replicated (see *example.md*);
 
-* Markdown Tables are not supported yet;
+* <del>Markdown Tables are not supported yet;</del>  Markdown tables supported through `[[[ ]]]` *custom environment* (see *example.md*)
 
 * Question and answer feedback are not supported yet.
 
@@ -148,7 +148,15 @@ a linear optimization problem ?
 
 All images are encoded to *base64* and included in the output, so the resulting XML is self-contained and ready to import into *Moodle*.
 
-**Important:** Pay particular atention to use spaces after section, question or answers delimiters, e.g., `#`, `*` and `-`.
+**Important note (1):** Pay particular atention to use spaces after section, question or answers delimiters, e.g., `#`, `*` and `-`.
+
+**Important note (2):** Regular line breaks in markdown are not converted automatically to line breaks in the output. You must place to spaces for this to happen. This is a *markdown* standard, e.g.,
+
+```markdown
+First paragraph.(two spaces here)
+
+Next paragraph.
+```
 
 ## How to Use
 
@@ -194,6 +202,9 @@ The script includes some *configurations* that can be manually modified, namely:
 CONFIG = {
     # Produce debugging information while parsing
     'debug' : False,
+    
+    # Place table borders through css style?
+    'table_border' : True,
     
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
