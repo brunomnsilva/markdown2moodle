@@ -150,7 +150,7 @@ All images are encoded to *base64* and included in the output, so the resulting 
 
 **Important note (1):** Pay particular atention to use spaces after section, question or answers delimiters, e.g., `#`, `*` and `-`.
 
-**Important note (2):** Regular line breaks in markdown are not converted automatically to line breaks in the output. You must place to spaces for this to happen. This is a *markdown* standard, e.g.,
+**Important note (2):** Regular line breaks in markdown are not converted automatically to line breaks in the output. You must **place two spaces** for this to happen. This is a *markdown* standard, e.g.,
 
 ```markdown
 First paragraph.(two spaces here)
