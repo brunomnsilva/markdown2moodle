@@ -171,13 +171,14 @@ def wrap_cdata(content):
     return '<![CDATA[' + content + ']]>'
 
 def sanitize_entities(text):
-    """Converts <, > and & to html entities."""
+    """Converts <, >, * and & to html entities."""
 
     text = text.replace('#','\\#')
     #unfortunately, this order is important
     text = text.replace('&','&amp;')
     text = text.replace('>','&gt;')
     text = text.replace('<','&lt;')
+    text = text.replace('*','&ast;')    
         
     return text
 
