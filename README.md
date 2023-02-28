@@ -29,7 +29,7 @@ A full example using all available features is avalable in [example.md](example.
 
 Nonetheless, a portion of it to illustrate the quiz format in markdown is presented below:
 
-```markdown
+~~~markdown
 # DummyCategory/Programming/ADT
 
 * Consider the following function:
@@ -48,7 +48,7 @@ Mark the correct statements about `fib(n)`:
 
 * Consider the following code that uses the ADT Stack:
 
-`` ```cpp
+```cpp
 PtStack s1 = stackCreate(10);
 PtStack s2 = stackCreate(10);
 for(int i=0; i<4; i++) {
@@ -65,7 +65,7 @@ while(!stackIsEmpty(s1)) {
     }
 }
 //s1 = ? s2 = ?
-`` ```
+```
 
 What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the second loop?
     - !`s1 = {} e s2 = {10}`
@@ -75,7 +75,7 @@ What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the
 
 * Consider the parcial specification of the ADT Complex and the following code:
 
-`` ```cpp{img}
+```cpp{img}
 #define COMPLEX_OK      0
 #define COMPLEX_NULL    1
 
@@ -93,7 +93,7 @@ int complexIm (PtComplex c, double *im);
 //----
 
 PtComplex a = complexCreate(1, 8);
-`` ```
+```
 
 How to get the imaginary component of the complex number `a`?
     - !`double im = 0; complexIm(a, &im);`
@@ -132,7 +132,7 @@ a linear optimization problem ?
     - $x = (\frac{4}{3},1)$
     - !$x(\frac{8}{5}, \frac{4}{5})$
 
-```
+~~~
 
 * Categories are specified via *markdown sections*. Note the use of `/` to specify subcategories (you can further create a subcategory of a subcategory).
 
@@ -142,7 +142,7 @@ a linear optimization problem ?
 
 * Text allows any markdown formatting, e.g., **bold** and *italic*;
 
-* Images are included normally, as in any markdown file, including by an external *url*.
+* Images are included normally, as in any markdown file, even by an external *url*.
 
 * Code blocks are included using *backticks* followed by the *lexer*, as in any markdown file. If using `{img}` after the lexer, then the code will be converted to a *png* image with syntax highlighting; personally, I prefer this method. Otherwise, it will be exported in plain text.
 
