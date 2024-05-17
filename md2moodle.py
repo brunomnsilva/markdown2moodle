@@ -118,7 +118,7 @@ WRONG_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)(.*)$')
 FEEDBACK_PATTERN = re.compile(r'^(\s*)>(.*)$')
 SWITCH_PRE_TAG_PATTERN = re.compile(r'^```.*$')
 EMPTY_LINE_PATTERN = re.compile(r'^\s*$')
-IMAGE_PATTERN = re.compile(r'!\[.*\]\((.+)\)')
+IMAGE_PATTERN = re.compile(r'!\[[^]]*\]\(([^)]+)\)')
 MULTI_LINE_CODE_PATTERN = re.compile(r'```(.*)\n([\s\S]+?)```', re.MULTILINE)
 SINGLE_LINE_CODE_PATTERN = re.compile(r'`([^`]+)`')
 # question mark in the regex implies that it is not greedy
