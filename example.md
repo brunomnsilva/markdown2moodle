@@ -158,7 +158,21 @@ What's the minimum cost path
 
 between `A` and `E`?
 
-- A, B, C
-- !A, D, E, C
-- A, B, D, E, C
-- No path exists
+    - A, B, C
+    - !A, D, E, C
+    - A, B, D, E, C
+    - No path exists
+
+* Between the following shapes:
+
+[[[
+circle          | triangle          |
+:--------------:|:-----------------:|
+![](circle.png) | ![](triangle.png) |
+]]]
+
+which one do you prefer?
+
+- ! circle
+- triangle
+- none
