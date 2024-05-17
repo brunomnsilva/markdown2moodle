@@ -90,7 +90,7 @@ CORRECT_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)!(.*)$')
 WRONG_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)(.*)$')
 SWITCH_PRE_TAG_PATTERN = re.compile(r'^```.*$')
 EMPTY_LINE_PATTERN = re.compile(r'^\s*$')
-IMAGE_PATTERN = re.compile(r'!\[.*\]\((.+)\)')
+IMAGE_PATTERN = re.compile(r'!\[[^]]*\]\(([^)]+)\)')
 MULTI_LINE_CODE_PATTERN = re.compile(r'```(.*)\n([\s\S]+?)```', re.MULTILINE)
 SINGLE_LINE_CODE_PATTERN = re.compile(r'`([^`]+)`')
 # question mark in the regex implies that it is not greedy
@@ -197,7 +197,7 @@ def render_question(text, md_dir_path):
 
     text = re.sub(MULTI_LINE_CODE_PATTERN, replace_multi_line_code, text)
     text = re.sub(SINGLE_LINE_CODE_PATTERN, replace_single_line_code, text)
-    text = re.sub(IMAGE_PATTERN, replace_image_wrapper(md_dir_path), text)
+    text = re.subn(IMAGE_PATTERN, replace_image_wrapper(md_dir_path), text)[0]
     text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, replace_latex_double_dollars, text)
     text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
     text = re.sub(TABLE_PATTERN, replace_table, text)
