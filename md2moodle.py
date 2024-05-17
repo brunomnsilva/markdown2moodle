@@ -1,4 +1,6 @@
-# Markdown to Moodle XML 
+#!/usr/bin/env python3
+
+# Markdown to Moodle XML
 #
 # This script parses a markdown file (containing quizes) and outputs Moodle's XML Quiz format.
 #
