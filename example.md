@@ -184,6 +184,23 @@ What's the minimum cost path between `A` and `E`?
 - A, B, D, E, C
 - No path exists
 
+# Tables with images
+
+* Between the following shapes:
+
+[[[
+circle          | triangle          |
+:--------------:|:-----------------:|
+![](circle.png) | ![](triangle.png) |
+]]]
+
+which one do you prefer?
+
+- ! circle
+- triangle
+- none
+
+
 # DummyCategory/MarkdownFormatting
 
 <!-- Comments will be striped from the output, so it is safe to comment your quiz files -->
