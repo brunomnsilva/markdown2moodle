@@ -88,6 +88,7 @@ HEADER_PATTERN = re.compile(r'^\s*# (.*)$')
 QUESTION_PATTERN = re.compile(r'^(\s*)\*(\s)(.*)$')
 CORRECT_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)!(.*)$')
 WRONG_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)(.*)$')
+FEEDBACK_PATTERN = re.compile(r'^(\s*)>(.*)$')
 SWITCH_PRE_TAG_PATTERN = re.compile(r'^```.*$')
 EMPTY_LINE_PATTERN = re.compile(r'^\s*$')
 IMAGE_PATTERN = re.compile(r'!\[.*\]\((.+)\)')
@@ -122,6 +123,9 @@ def is_answer(string):
 def is_correct_answer(string):
     return False if get_correct_answer(string) is None else True
 
+def is_feedback(string):
+    return False if get_answer_feedback(string) is None else True 
+
 def is_wrong_answer(string):
     return False if get_wrong_answer(string) is None else True
 
@@ -149,7 +153,6 @@ def get_question(string):
         return match.group(3)
     return None
 
-
 def get_correct_answer(string):
     match = re.match(CORRECT_ANSWER_PATTERN, string)
     if match:
@@ -161,6 +164,12 @@ def get_wrong_answer(string):
     match = re.match(WRONG_ANSWER_PATTERN, string)
     if match:
         return match.group(3)
+    return None
+
+def get_answer_feedback(string):
+    match = re.match(FEEDBACK_PATTERN, string)
+    if match:
+        return match.group(2)
     return None
 
 ##
@@ -190,6 +199,8 @@ def render_answer(text):
     text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
 
     return wrap_cdata( markdown( text ) ) 
+
+# TODO: render feedback
 
 def render_question(text, md_dir_path):
     """Replaces any allowed contents, e.g., code and images
@@ -375,7 +386,9 @@ class Quiz(dict):
     def append_to_question(self, line): 
         """Appends content to current question."""
 
-        #TODO: there's a problem enforcing line breaks in the output
+        #TODO: there's a problem enforcing line breaks in the output?
+        # Maybe we should instead inform the user of the correct markdown
+        # sintax, i.e., place two spaces to enforce a line break.
         self.current_question['text'] += line + '\n'
 
     def consume_answer(self, line):
@@ -385,7 +398,8 @@ class Quiz(dict):
 
             current_answer = {
                 'text': get_correct_answer(line),
-                'correct': True
+                'correct': True,
+                'feedback': None
                 }
             
             self.current_question['answers'].append(current_answer)
@@ -394,7 +408,8 @@ class Quiz(dict):
 
             current_answer = {
                 'text': get_wrong_answer(line),
-                'correct': False
+                'correct': False,
+                'feedback': None
                 }
             
             self.current_question['answers'].append(current_answer)
@@ -402,6 +417,11 @@ class Quiz(dict):
         else:
             #some other content, ignore.
             pass
+
+    def consume_feedback(self, line):
+        cur_answer = self.current_question['answers'][-1]
+        cur_answer['feedback'] = get_answer_feedback(line)
+
 
     def current_question_has_correct_answers(self):
         correct_answers = [x for x in self.current_question['answers'] if x['correct']]
@@ -553,6 +573,13 @@ def answer_to_xml(answer):
 
     xml = '<answer fraction="'+str(answer['weight'])+'">'
     xml += '<text>'+text+'</text>'
+    
+    if answer['feedback']:
+        # we allow formulas and tex in the feedback, so
+        # use the existing answer rendering function
+        feedback = render_answer( answer['feedback'] )
+        xml += '<feedback><text>'+feedback+'</text></feedback>'
+
     xml += '</answer>'
     return xml
 
@@ -666,7 +693,8 @@ def state_parse_question(quiz, line_text, line_number):
     elif is_answer(line_text):
         quiz.consume_answer(line_text)
         state = "parse_answer"
-    elif is_header(line_text) or is_question(line_text) or is_eof(line_text):
+    elif is_header(line_text) or is_question(line_text) \
+                or is_feedback(line_text) or is_eof(line_text):
         raise TransitionError("Expecting text, codeblock or answer")
     else:
         quiz.append_to_question(line_text)
@@ -694,6 +722,40 @@ def state_parse_answer(quiz, line_text, line_number):
     if is_blank(line_text):
         # do nothing
         state = "parse_answer"
+    elif is_answer(line_text):
+        quiz.consume_answer(line_text)
+        state = "parse_answer"
+    elif is_feedback(line_text):
+        quiz.consume_feedback(line_text)
+        state = "parse_feedback"
+    elif is_question(line_text):
+        if quiz.current_question_has_correct_answers():
+            quiz.consume_question(line_text)
+            state = "parse_question"
+        else:
+            raise TransitionError("Expecting at least one correct answer in previous question")
+    elif is_header(line_text):
+        if quiz.current_question_has_correct_answers():
+            quiz.consume_header(line_text)
+            state = "parse_header"
+        else:
+            raise TransitionError("Expecting at least one correct answer in previous question")
+    elif is_eof(line_text):
+        if quiz.current_question_has_correct_answers():
+            # mark as valid and go to end state
+            quiz.validate()
+            state = "end"
+        else:
+            raise TransitionError("Expecting at least one correct answer in previous question")
+    else:
+        raise TransitionError("Expecting answer, question or header")
+
+    return state
+
+def state_feedback(quiz, line_text, line_number):
+    if is_blank(line_text):
+        # do nothing
+        state = "parse_feedback"    
     elif is_answer(line_text):
         quiz.consume_answer(line_text)
         state = "parse_answer"
@@ -746,6 +808,7 @@ def parse_file(md_script):
     m.add_state("parse_header", state_parse_header)
     m.add_state("parse_question", state_parse_question)
     m.add_state("parse_answer", state_parse_answer)
+    m.add_state("parse_feedback", state_feedback)
     m.add_state("parse_question_codeblock", state_parse_question_codeblock)
     m.add_state("end", state_end, end_state=1)
 
