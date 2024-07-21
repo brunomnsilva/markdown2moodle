@@ -48,13 +48,13 @@
 
 * What's the *access policy* of the ADT Queue?
     - !FIFO
-        > Yes, *first-in-first-out*!
+        > Yes, *first-in-first-out* in correct!
     - LIFO
-        > No, *last-in-first-out* pertains to the ADT Stack
+        > No, *last-in-first-out* pertains to the ADT Stack.
     - *Rank*-based
-        > No, this would be for the ADT List
+        > No, this would be for the ADT List.
     - *Key*-based
-        > No, this would be for the ADT Map
+        > No, this would be for the ADT Map.
 
 * Consider the following code that uses the ADT Stack:
 
