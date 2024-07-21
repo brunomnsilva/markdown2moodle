@@ -253,7 +253,7 @@ To extend the FSM to include *feedback* information in questions, the following 
 
     * This handler must include all logic for state transitions.
 
-In the future I'll be addressing this feature, but feel free to take on the challenge :smile:
+<del>In the future I'll be addressing this feature, but feel free to take on the challenge</del> I've addressed this already :smile:
 
 ## License
 
