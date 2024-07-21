@@ -21,7 +21,7 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
 * <del>Markdown Tables are not supported yet;</del>  Markdown tables supported through `[[[ ]]]` *custom environment* (see [example.md](example.md))
 
-* Question and answer feedback are not supported yet.
+* <del>Question and answer feedback are not supported yet.</del> Answer feedback can be provided, using the `>` symbol (see [example.md](example.md))
 
 ## Example
 
