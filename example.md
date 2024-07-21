@@ -6,19 +6,19 @@
 
 * Consider the following function:
 
-```cpp{img}
-int func(int *arr, int arrSize) {
-    int val = 0;
-    for(int i=0; i<arrSize; i++) {
-        for(int j=0; j<2; j++) {
-            val += arr[i];
+    ```cpp{img}
+    int func(int *arr, int arrSize) {
+        int val = 0;
+        for(int i=0; i<arrSize; i++) {
+            for(int j=0; j<2; j++) {
+                val += arr[i];
+            }
         }
+        return val;
     }
-    return val;
-}
-```
+    ```
 
-What's its time complexity?
+    What's its time complexity?
     - $O(1)$
     - !$O(n)$
     - $O(log\;n)$
@@ -26,15 +26,15 @@ What's its time complexity?
 
 * Consider the following function:
 
-$$
-fib(n) = \left\{\begin{matrix}
-1 & n = 0\\ 
-1 & n = 1\\ 
-fib(n-1) + fib(n-2) & n > 1 
-\end{matrix}\right.
-$$
+    $$
+    fib(n) = \left\{\begin{matrix}
+    1 & n = 0\\ 
+    1 & n = 1\\ 
+    fib(n-1) + fib(n-2) & n > 1 
+    \end{matrix}\right.
+    $$
 
-Mark the correct statements about `fib(n)`:
+    Mark the correct statements about `fib(n)`:
 
     - !It's a recursive function
 
@@ -48,32 +48,36 @@ Mark the correct statements about `fib(n)`:
 
 * What's the *access policy* of the ADT Queue?
     - !FIFO
+        > Yes, *first-in-first-out*!
     - LIFO
-    - Based onrank
-    - Based on key
+        > No, *last-in-first-out* pertains to the ADT Stack
+    - *Rank*-based
+        > No, this would be for the ADT List
+    - *Key*-based
+        > No, this would be for the ADT Map
 
 * Consider the following code that uses the ADT Stack:
 
-```cpp
-PtStack s1 = stackCreate(10);
-PtStack s2 = stackCreate(10);
-for(int i=0; i<4; i++) {
-    stackPush(s1, (i+1) );
-}
-int elem1, elem2;
-while(!stackIsEmpty(s1)) {
-    stackPop(s1, &elem1);
-    if(!stackIsEmpty(s2)) {
-        stackPop(s2, &elem2);
-        stackPush(s2, (elem1 + elem2) );
-    } else {
-        stackPush(s2, elem1);
+    ```cpp
+    PtStack s1 = stackCreate(10);
+    PtStack s2 = stackCreate(10);
+    for(int i=0; i<4; i++) {
+        stackPush(s1, (i+1) );
     }
-}
-//s1 = ? s2 = ?
-```
+    int elem1, elem2;
+    while(!stackIsEmpty(s1)) {
+        stackPop(s1, &elem1);
+        if(!stackIsEmpty(s2)) {
+            stackPop(s2, &elem2);
+            stackPush(s2, (elem1 + elem2) );
+        } else {
+            stackPush(s2, elem1);
+        }
+    }
+    //s1 = ? s2 = ?
+    ```
 
-What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the second loop?
+    What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the second loop?
     - !`s1 = {} e s2 = {10}`
     - `s1 = {1,2,3,4} e s2 = {4,7,9,10}`
     - `s1 = {} e s2 = {6}`
@@ -81,29 +85,30 @@ What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the
 
 * Consider the parcial specification of the ADT Complex:
 
-```cpp{img}
-#define COMPLEX_OK      0
-#define COMPLEX_NULL    1
+    ```cpp{img}
+    #define COMPLEX_OK      0
+    #define COMPLEX_NULL    1
 
-/**
- * @brief Retrieve the imaginary part of the complex number.
- *
- * @param c [in] PtComplex pointer to the number's data structure.
- * @param im [out] Address of variable to hold result
- *
- * @return COMPLEX_OK and imaginary part assigned to '*im'
- * @return COMPLEX_NULL if 'c' is NULL
- */
-int complexIm (PtComplex c, double *im);
-```
+    /**
+    * @brief Retrieve the imaginary part of the complex number.
+    *
+    * @param c [in] PtComplex pointer to the number's data structure.
+    * @param im [out] Address of variable to hold result
+    *
+    * @return COMPLEX_OK and imaginary part assigned to '*im'
+    * @return COMPLEX_NULL if 'c' is NULL
+    */
+    int complexIm (PtComplex c, double *im);
+    ```
 
-And the following code:  
+    And the following code:  
 
-```cpp{img}
-PtComplex a = complexCreate(1, 8);
-```
+    ```cpp{img}
+    PtComplex a = complexCreate(1, 8);
+    ```
 
-How to get the imaginary component of the complex number `a`?
+    How to get the imaginary component of the complex number `a`?
+
     - !`double im = 0; complexIm(a, &im);`
     - `int im = complexIm(a);`
     - `double im = a->im;`
@@ -111,31 +116,32 @@ How to get the imaginary component of the complex number `a`?
 
 * Consider the following two approaches for implementing the **ADT Stack** using an *array list*:
 
-![](stack_arraylist.png)
+    ![](stack_arraylist.png)
 
-Which one would you choose for better eficiency?
+    Which one would you choose for better eficiency?
 
     - !Approach **A**
     - Approach **B**
 
 # DummyCategory/Math
 
-* Is the problem
+* Is the problem:
 
-$$
-\begin{array}{ll}
-\max & 8x_1 + 3 x_2\\ 
-s.t. & 3 x_1 + 8 x_2 \leq 9\\
-& x_1 \times x_2 \leq 20\\
-& x \geq 0
-\end{array}
-$$
+    $$
+    \begin{array}{ll}
+    \max & 8x_1 + 3 x_2\\ 
+    s.t. & 3 x_1 + 8 x_2 \leq 9\\
+    & x_1 \times x_2 \leq 20\\
+    & x \geq 0
+    \end{array}
+    $$
 
-a linear optimization problem ?
+    a linear optimization problem ?
     - yes
     - !no
 
 * What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
+
     - $x = (\frac{8}{3},0)$
     - $x = (\frac{4}{3},1)$
     - !$x(\frac{8}{5}, \frac{4}{5})$
@@ -144,21 +150,19 @@ a linear optimization problem ?
 
 * Consider the following *Dijkstra* distance table, starting at *vertex* `A`:
 
-[[[
-Vertex | Distance | Path
--------|----------|---------
-A      | 0        | $\emptyset$
-B      | 3        | D
-C      | 7        | E
-D      | 1        | A
-E      | 2        | D
-]]]
+    [[[
+    Vertex | Distance | Path
+    -------|----------|---------
+    A      | 0        | $\emptyset$
+    B      | 3        | D
+    C      | 7        | E
+    D      | 1        | A
+    E      | 2        | D
+    ]]]
 
-What's the minimum cost path  
+    What's the minimum cost path between `A` and `E`?
 
-between `A` and `E`?
-
-- A, B, C
-- !A, D, E, C
-- A, B, D, E, C
-- No path exists
+    - A, B, C
+    - !A, D, E, C
+    - A, B, D, E, C
+    - No path exists
