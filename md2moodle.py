@@ -199,8 +199,6 @@ def render_answer(text):
 
     return wrap_cdata( markdown( text ) ) 
 
-# TODO: render feedback
-
 def render_question(text, md_dir_path):
     """Replaces any allowed contents, e.g., code and images
      and returns the CDATA content."""
@@ -668,13 +666,15 @@ class MarkdownParser(StateMachine):
         with open(md_file_name, "r") as md_file:
             md_script = md_file.read()
         
+        # Quiz instance 
         quiz = Quiz()
 
-        # Parse file contents line-wise
+        # Split into lines and put "EOF" at the end
         md_lines = md_script.split(NEW_LINE)
         md_lines.append("EOF")
-        line_number = 1
         
+        # Parse file contents line-wise
+        line_number = 1
         try:
             for md_row in md_lines:
                 md_row = md_row.rstrip('\r')
@@ -862,7 +862,7 @@ class QuizExporterXML(QuizExporter):
         super().__init__(quiz)
 
     def export(self, output_path="."):
-        print("XML file(s) successfully generated!")
+        logging.info("XML file(s) successfully generated!")
 
 
 class QuizExporterDOCX(QuizExporter):
@@ -870,7 +870,7 @@ class QuizExporterDOCX(QuizExporter):
         super().__init__(quiz)
 
     def export(self, output_path="."):
-        print("DOCX file successfully generated!")
+        logging.info("DOCX file successfully generated!")
 
 
 
@@ -886,11 +886,11 @@ if __name__ == '__main__':
         print("Usage details: python md2moodle.py <md_file> [stdout]")
         sys.exit()
 
-    # uncomment to see debug messages
+    # Configure log messages
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.INFO
+        level=logging.INFO # logging.DEBUG 
     )
 
     md_file_name = sys.argv[1]
