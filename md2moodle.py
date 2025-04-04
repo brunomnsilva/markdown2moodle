@@ -36,7 +36,9 @@ import hashlib
 import random
 import json
 import base64
+from abc import abstractmethod, ABC
 from markdown import markdown
+import logging
 
 # To prettify xml
 import xml.dom.minidom
@@ -52,9 +54,6 @@ else:
 ######################################################################
 
 CONFIG = {
-    # Produce debugging information while parsing
-    'debug' : False,
-
     # Place table borders through css style?
     'table_border' : False,
     
@@ -380,7 +379,10 @@ class Quiz(dict):
     def consume_question(self, line):
         """Starts a new question with this content."""
 
-        self.current_question = {'text': get_question(line), 'answers': []}
+        self.current_question = {
+            'text': get_question(line), 
+            'answers': []
+            }
         self.section.append(self.current_question)
 
     def append_to_question(self, line): 
@@ -419,9 +421,10 @@ class Quiz(dict):
             pass
 
     def consume_feedback(self, line):
+        # Add current feedback to the last parsed answer. 
+        # Feedbacks are provided per-answer.
         cur_answer = self.current_question['answers'][-1]
         cur_answer['feedback'] = get_answer_feedback(line)
-
 
     def current_question_has_correct_answers(self):
         correct_answers = [x for x in self.current_question['answers'] if x['correct']]
@@ -585,7 +588,7 @@ def answer_to_xml(answer):
 
 
 ######################################################################
-# Section 3 - FSM implementation
+# Section 3 - Generic FSM implementation
 ######################################################################
 
 class InitializationError(Exception):
@@ -608,7 +611,7 @@ class StateMachine:
         self.state = None
         self.endStates = []
 
-    def add_state(self, name, handler, end_state=0):
+    def add_state(self, name, handler, end_state = False):
         """Adds a state (name) and its handler function."""
 
         name = name.upper()
@@ -628,210 +631,250 @@ class StateMachine:
         try:
             handler = self.handlers[self.state]
         except:
-            raise InitializationError("must call .set_start() before .run()")
+            raise InitializationError("no start state defined.")
         if not self.endStates:
-            raise  InitializationError("at least one state must be an end_state")
+            raise  InitializationError("no end state defined.")
     
-        if CONFIG['debug']:
-            print("In state %25s | Processing: %s" %(self.state, line_text))
+        logging.debug(f"[StateMachine]: In state {self.state} | Processing: {line_text}")
         
         newState = handler(quest, line_text, line_number)
         self.state = newState.upper()
 
-        if self.state in self.endStates and CONFIG['debug']:
-            print("Success! Reached an end state:", newState)
-
-
+        if self.state in self.endStates:
+            logging.debug(f"[StateMachine]: Reached and end state -> {newState}")
 
 ######################################################################
 # Section 4 - FSM Markdown Parser
 ######################################################################
 
-##
-# FSM State handlers - These implement the transitions and their actions
-#
-# Each handler receives the current quiz, the currently parsed line
-# line number. Line numbers aren't currently used within each state,
-# but may be useful in the future for some reason.
+class MarkdownParser(StateMachine):
+    def __init__(self):
+        super().__init__()
 
-def state_start(quiz, line_text, line_number):
+        # Add states and transitions to the FSM
+        self.add_state("start", self.state_start)
+        self.add_state("parse_header", self.state_parse_header)
+        self.add_state("parse_question", self.state_parse_question)
+        self.add_state("parse_answer", self.state_parse_answer)
+        self.add_state("parse_feedback", self.state_feedback)
+        self.add_state("parse_question_codeblock", self.state_parse_question_codeblock)
+        self.add_state("end", self.state_end, end_state = True)
+
+    def parse(self, md_file_name):
+        # Set start state 
+        self.set_start("start")
+
+        md_script = None
+        with open(md_file_name, "r") as md_file:
+            md_script = md_file.read()
+        
+        quiz = Quiz()
+
+        # Parse file contents line-wise
+        md_lines = md_script.split(NEW_LINE)
+        md_lines.append("EOF")
+        line_number = 1
+        
+        try:
+            for md_row in md_lines:
+                md_row = md_row.rstrip('\r')
+                md_row = md_row.rstrip('\n')
+                
+                self.run(quiz, md_row, line_number)
+
+                line_number += 1
+            
+        except TransitionError as e:
+            print("Error at line %d: %s." % (line_number, e))
+            quiz = None
+
+        return quiz
     
-    if is_blank(line_text):
-        state = "start"
-    elif is_header(line_text):
-        quiz.consume_header(line_text)
-        state = "parse_header"
-    elif is_question(line_text):
-        quiz.consume_question(line_text)
-        state = "parse_question"
-    else:
-        raise TransitionError("Expecting a header or a question")
+    ##
+    # FSM State handlers - These implement the transitions and their actions
+    #
+    # Each handler receives the current quiz, the currently parsed line
+    # line number. Line numbers aren't currently used within each state,
+    # but may be useful in the future for some reason.
 
-    return state
+    @staticmethod
+    def state_start(quiz, line_text, line_number):
+        
+        if is_blank(line_text):
+            state = "start"
+        elif is_header(line_text):
+            quiz.consume_header(line_text)
+            state = "parse_header"
+        elif is_question(line_text):
+            quiz.consume_question(line_text)
+            state = "parse_question"
+        else:
+            raise TransitionError("Expecting a header or a question")
 
-def state_parse_header(quiz, line_text, line_number):
-    
-    if is_blank(line_text):
-        # do nothing
-        state = "parse_header"
-    elif is_question(line_text):
-        quiz.consume_question(line_text)
-        state = "parse_question"
-    else:
-        raise TransitionError("Expecting a question")
+        return state
 
-    return state
+    @staticmethod
+    def state_parse_header(quiz, line_text, line_number):
+        
+        if is_blank(line_text):
+            # do nothing
+            state = "parse_header"
+        elif is_question(line_text):
+            quiz.consume_question(line_text)
+            state = "parse_question"
+        else:
+            raise TransitionError("Expecting a question")
 
-def state_parse_question(quiz, line_text, line_number):
+        return state
 
-    if is_blank(line_text):
-        # do nothing
-        state = "parse_question"
-    elif is_blockcode(line_text):
-        quiz.append_to_question(line_text)
-        state = "parse_question_codeblock"
-    elif is_answer(line_text):
-        quiz.consume_answer(line_text)
-        state = "parse_answer"
-    elif is_header(line_text) or is_question(line_text) \
-                or is_feedback(line_text) or is_eof(line_text):
-        raise TransitionError("Expecting text, codeblock or answer")
-    else:
-        quiz.append_to_question(line_text)
-        state  = "parse_question"
+    @staticmethod
+    def state_parse_question(quiz, line_text, line_number):
+
+        if is_blank(line_text):
+            # do nothing
+            state = "parse_question"
+        elif is_blockcode(line_text):
+            quiz.append_to_question(line_text)
+            state = "parse_question_codeblock"
+        elif is_answer(line_text):
+            quiz.consume_answer(line_text)
+            state = "parse_answer"
+        elif is_header(line_text) or is_question(line_text) \
+                    or is_feedback(line_text) or is_eof(line_text):
+            raise TransitionError("Expecting text, codeblock or answer")
+        else:
+            quiz.append_to_question(line_text)
+            state  = "parse_question"
+            pass
+
+        return state
+
+    @staticmethod
+    def state_parse_question_codeblock(quiz, line_text, line_number):
+
+        # In a codeblock we accept everything until it closes
+        if is_eof(line_text):
+            raise TransitionError("Expecting closing codeblock")
+        elif is_blockcode(line_text):
+            quiz.append_to_question(line_text)
+            state = "parse_question"
+        else:
+            quiz.append_to_question(line_text)
+            state = "parse_question_codeblock"
+
+        return state
+
+    @staticmethod
+    def state_parse_answer(quiz, line_text, line_number):
+
+        if is_blank(line_text):
+            # do nothing
+            state = "parse_answer"
+        elif is_answer(line_text):
+            quiz.consume_answer(line_text)
+            state = "parse_answer"
+        elif is_feedback(line_text):
+            quiz.consume_feedback(line_text)
+            state = "parse_feedback"
+        elif is_question(line_text):
+            if quiz.current_question_has_correct_answers():
+                quiz.consume_question(line_text)
+                state = "parse_question"
+            else:
+                raise TransitionError("Expecting at least one correct answer in previous question")
+        elif is_header(line_text):
+            if quiz.current_question_has_correct_answers():
+                quiz.consume_header(line_text)
+                state = "parse_header"
+            else:
+                raise TransitionError("Expecting at least one correct answer in previous question")
+        elif is_eof(line_text):
+            if quiz.current_question_has_correct_answers():
+                # mark as valid and go to end state
+                quiz.validate()
+                state = "end"
+            else:
+                raise TransitionError("Expecting at least one correct answer in previous question")
+        else:
+            raise TransitionError("Expecting answer, question or header")
+
+        return state
+
+    @staticmethod
+    def state_feedback(quiz, line_text, line_number):
+        if is_blank(line_text):
+            # do nothing
+            state = "parse_feedback"    
+        elif is_answer(line_text):
+            quiz.consume_answer(line_text)
+            state = "parse_answer"
+        elif is_question(line_text):
+            if quiz.current_question_has_correct_answers():
+                quiz.consume_question(line_text)
+                state = "parse_question"
+            else:
+                raise TransitionError("Expecting at least one correct answer in previous question")
+        elif is_header(line_text):
+            if quiz.current_question_has_correct_answers():
+                quiz.consume_header(line_text)
+                state = "parse_header"
+            else:
+                raise TransitionError("Expecting at least one correct answer in previous question")
+        elif is_eof(line_text):
+            if quiz.current_question_has_correct_answers():
+                # mark as valid and go to end state
+                quiz.validate()
+                state = "end"
+            else:
+                raise TransitionError("Expecting at least one correct answer in previous question")
+        else:
+            raise TransitionError("Expecting answer, question or header")
+
+        return state
+
+    @staticmethod
+    def state_end(quiz, line_text, line_number):
+        """End state."""
         pass
 
-    return state
+######################################################################
+# Section ? - QuizExporter
+######################################################################    
 
-def state_parse_question_codeblock(quiz, line_text, line_number):
-
-    # In a codeblock we accept everything until it closes
-    if is_eof(line_text):
-        raise TransitionError("Expecting closing codeblock")
-    elif is_blockcode(line_text):
-        quiz.append_to_question(line_text)
-        state = "parse_question"
-    else:
-        quiz.append_to_question(line_text)
-        state = "parse_question_codeblock"
-
-    return state
-
-def state_parse_answer(quiz, line_text, line_number):
-
-    if is_blank(line_text):
-        # do nothing
-        state = "parse_answer"
-    elif is_answer(line_text):
-        quiz.consume_answer(line_text)
-        state = "parse_answer"
-    elif is_feedback(line_text):
-        quiz.consume_feedback(line_text)
-        state = "parse_feedback"
-    elif is_question(line_text):
-        if quiz.current_question_has_correct_answers():
-            quiz.consume_question(line_text)
-            state = "parse_question"
-        else:
-            raise TransitionError("Expecting at least one correct answer in previous question")
-    elif is_header(line_text):
-        if quiz.current_question_has_correct_answers():
-            quiz.consume_header(line_text)
-            state = "parse_header"
-        else:
-            raise TransitionError("Expecting at least one correct answer in previous question")
-    elif is_eof(line_text):
-        if quiz.current_question_has_correct_answers():
-            # mark as valid and go to end state
-            quiz.validate()
-            state = "end"
-        else:
-            raise TransitionError("Expecting at least one correct answer in previous question")
-    else:
-        raise TransitionError("Expecting answer, question or header")
-
-    return state
-
-def state_feedback(quiz, line_text, line_number):
-    if is_blank(line_text):
-        # do nothing
-        state = "parse_feedback"    
-    elif is_answer(line_text):
-        quiz.consume_answer(line_text)
-        state = "parse_answer"
-    elif is_question(line_text):
-        if quiz.current_question_has_correct_answers():
-            quiz.consume_question(line_text)
-            state = "parse_question"
-        else:
-            raise TransitionError("Expecting at least one correct answer in previous question")
-    elif is_header(line_text):
-        if quiz.current_question_has_correct_answers():
-            quiz.consume_header(line_text)
-            state = "parse_header"
-        else:
-            raise TransitionError("Expecting at least one correct answer in previous question")
-    elif is_eof(line_text):
-        if quiz.current_question_has_correct_answers():
-            # mark as valid and go to end state
-            quiz.validate()
-            state = "end"
-        else:
-            raise TransitionError("Expecting at least one correct answer in previous question")
-    else:
-        raise TransitionError("Expecting answer, question or header")
-
-    return state
-
-def state_end(quiz, line_text, line_number):
-    """End state."""
-    pass
-    
-##
-# The Parser loop
-
-def parse_file(md_script):
-    """
-    Parses the markdown file one line at a time and returns a Quiz
-
-    :param md_script: list of file lines
-	:type md_script: list
-    """
-
-    # Create Quiz
-    quiz = Quiz()
-
-    # Initialize state machine
-    m = StateMachine()
-    
-    m.add_state("start", state_start)
-    m.add_state("parse_header", state_parse_header)
-    m.add_state("parse_question", state_parse_question)
-    m.add_state("parse_answer", state_parse_answer)
-    m.add_state("parse_feedback", state_feedback)
-    m.add_state("parse_question_codeblock", state_parse_question_codeblock)
-    m.add_state("end", state_end, end_state=1)
-
-    m.set_start("start")
-
-    # Parse file lines
-    md_lines = md_script.split(NEW_LINE)
-    md_lines.append("EOF")
-    line_number = 1
-    try:
-        for md_row in md_lines:
-            md_row = md_row.rstrip('\r')
-            md_row = md_row.rstrip('\n')
-            
-            m.run(quiz, md_row, line_number)
-
-            line_number += 1
+class QuizExporter(ABC):
+    def __init__(self, quiz):
+        if not quiz:
+            raise ValueError("Quiz cannot be None.")
         
-    except TransitionError as e:
-        print("Error at line %d: %s." % (line_number, e))
-        quiz = None
+        if not quiz.is_valid:
+            raise ValueError("Quiz is not valid.")
+        
+        self.quiz = quiz
 
-    return quiz
+    @abstractmethod
+    def export(self, output_path="."):
+        pass
+
+
+
+class QuizExporterXML(QuizExporter):
+    def __init__(self, quiz):
+        super().__init__(quiz)
+
+    def export(self, output_path="."):
+        print("XML file(s) successfully generated!")
+
+
+class QuizExporterDOCX(QuizExporter):
+    def __init__(self, quiz):
+        super().__init__(quiz)
+
+    def export(self, output_path="."):
+        print("DOCX file successfully generated!")
+
+
+
+
 
 ######################################################################
 # Section 5 - Main
@@ -843,14 +886,17 @@ if __name__ == '__main__':
         print("Usage details: python md2moodle.py <md_file> [stdout]")
         sys.exit()
 
+    
+    md_file_name = sys.argv[1]
+
     try:
-        md_file_name = sys.argv[1]
+        parser = MarkdownParser()
+        quiz = parser.parse(md_file_name)
 
-        md_file = open(md_file_name, 'r')
-        md_script = md_file.read()
+        exporter = QuizExporterXML(quiz)
+        exporter.export()
 
-        quiz = parse_file(md_script)
-
+        """
         if quiz:
             if len(sys.argv) > 2:
                 #outputs to JSON containing the XML per section
@@ -859,7 +905,8 @@ if __name__ == '__main__':
             else:
                 #creates and outputs to XML files
                 quiz.export_xml_to_file(md_file_name)
-                print("XML file(s) successfully generated!")
-
+                print("XML file(s) successfully generated!")        
+        """
     except Exception as e:
-        print(e)
+            print(f"Exception: {e}")
+    
