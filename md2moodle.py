@@ -477,7 +477,7 @@ class Quiz(dict):
                 # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
 
         else:
-            print("Quiz is not marked as valid for export.")
+            logging.error("Quiz is not marked as valid for export.")
 
     def export_xml_to_string(self, md_file_name):
         """Produces the XML output and returns the resulting text."""
@@ -489,7 +489,7 @@ class Quiz(dict):
                 result[section_caption] = section_to_xml(section_caption, section, md_dir_path)
             return json.dumps(result, indent=2)
         else:
-            print("Quiz is not marked as valid for export.")
+            logging.error("Quiz is not marked as valid for export.")
             return ""
         
         
@@ -652,13 +652,13 @@ class MarkdownParser(StateMachine):
         super().__init__()
 
         # Add states and transitions to the FSM
-        self.add_state("start", self.state_start)
-        self.add_state("parse_header", self.state_parse_header)
-        self.add_state("parse_question", self.state_parse_question)
-        self.add_state("parse_answer", self.state_parse_answer)
-        self.add_state("parse_feedback", self.state_feedback)
-        self.add_state("parse_question_codeblock", self.state_parse_question_codeblock)
-        self.add_state("end", self.state_end, end_state = True)
+        self.add_state("start", self._state_start)
+        self.add_state("parse_header", self._state_parse_header)
+        self.add_state("parse_question", self._state_parse_question)
+        self.add_state("parse_answer", self._state_parse_answer)
+        self.add_state("parse_feedback", self._state_feedback)
+        self.add_state("parse_question_codeblock", self._state_parse_question_codeblock)
+        self.add_state("end", self._state_end, end_state = True)
 
     def parse(self, md_file_name):
         # Set start state 
@@ -685,7 +685,7 @@ class MarkdownParser(StateMachine):
                 line_number += 1
             
         except TransitionError as e:
-            print("Error at line %d: %s." % (line_number, e))
+            logging.error("Error at line %d: %s." % (line_number, e))
             quiz = None
 
         return quiz
@@ -698,7 +698,7 @@ class MarkdownParser(StateMachine):
     # but may be useful in the future for some reason.
 
     @staticmethod
-    def state_start(quiz, line_text, line_number):
+    def _state_start(quiz, line_text, line_number):
         
         if is_blank(line_text):
             state = "start"
@@ -714,7 +714,7 @@ class MarkdownParser(StateMachine):
         return state
 
     @staticmethod
-    def state_parse_header(quiz, line_text, line_number):
+    def _state_parse_header(quiz, line_text, line_number):
         
         if is_blank(line_text):
             # do nothing
@@ -728,7 +728,7 @@ class MarkdownParser(StateMachine):
         return state
 
     @staticmethod
-    def state_parse_question(quiz, line_text, line_number):
+    def _state_parse_question(quiz, line_text, line_number):
 
         if is_blank(line_text):
             # do nothing
@@ -750,7 +750,7 @@ class MarkdownParser(StateMachine):
         return state
 
     @staticmethod
-    def state_parse_question_codeblock(quiz, line_text, line_number):
+    def _state_parse_question_codeblock(quiz, line_text, line_number):
 
         # In a codeblock we accept everything until it closes
         if is_eof(line_text):
@@ -765,7 +765,7 @@ class MarkdownParser(StateMachine):
         return state
 
     @staticmethod
-    def state_parse_answer(quiz, line_text, line_number):
+    def _state_parse_answer(quiz, line_text, line_number):
 
         if is_blank(line_text):
             # do nothing
@@ -801,7 +801,7 @@ class MarkdownParser(StateMachine):
         return state
 
     @staticmethod
-    def state_feedback(quiz, line_text, line_number):
+    def _state_feedback(quiz, line_text, line_number):
         if is_blank(line_text):
             # do nothing
             state = "parse_feedback"    
@@ -833,7 +833,7 @@ class MarkdownParser(StateMachine):
         return state
 
     @staticmethod
-    def state_end(quiz, line_text, line_number):
+    def _state_end(quiz, line_text, line_number):
         """End state."""
         pass
 
@@ -886,7 +886,13 @@ if __name__ == '__main__':
         print("Usage details: python md2moodle.py <md_file> [stdout]")
         sys.exit()
 
-    
+    # uncomment to see debug messages
+    logging.basicConfig(
+        format="{levelname}: {message}",
+        style="{",
+        level=logging.INFO
+    )
+
     md_file_name = sys.argv[1]
 
     try:
@@ -908,5 +914,5 @@ if __name__ == '__main__':
                 print("XML file(s) successfully generated!")        
         """
     except Exception as e:
-            print(f"Exception: {e}")
+        print(f"Exception: {e}")
     
