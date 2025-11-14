@@ -40,6 +40,8 @@ from abc import abstractmethod, ABC
 from markdown import markdown
 import logging
 
+import traceback
+
 # To prettify xml
 import xml.dom.minidom
 
@@ -60,7 +62,7 @@ CONFIG = {
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
     # quiz shuffle answers | 1 -> true ; 0 -> false
-    'shuffle_answers' : '1',
+    'shuffle_answers' : '0',
 
     # in single answer questions, the penalty to apply to a wrong answer in % [0,1]
     'single_answer_penalty_weight' : 0, #e.g., 0.25 = 25% 
@@ -75,6 +77,48 @@ CONFIG = {
 
 }
 
+class ExportConfiguration(dict):
+    """
+    Stores export-related configuration settings as a dictionary.
+    Allows easy extension, loading from JSON, etc.
+    Does not include parser-specific settings like debug mode.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default values for export settings
+        default_config = {
+            # Place table borders through css style?
+            'table_border': False,
+            # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
+            'answer_numbering': 'abc',
+            # quiz shuffle answers | '1' -> true ; '0' -> false
+            'shuffle_answers': '0',
+            # in single answer questions, the penalty weight for wrong answer [0, 1] -
+            'single_answer_penalty_weight': 0,  # e.g., 0.25 means -25% penalty 
+            # pygments code snapshot generator
+            'pygments.font_size': 16,
+            'pygments.line_numbers': False,
+            # pygments code snapshot | additional dump to disk of generated images
+            'pygments.dump_image': False,
+            'pygments.dump_image_id': 1,  # Mutable item, potentially updated during export
+        }
+        # Update with provided args, potentially overriding defaults
+        # Start with defaults, then apply args/kwargs
+        self.update(default_config)
+        self.update(dict(*args, **kwargs)) # Properly handle args and kwargs initialization
+
+    def __getattr__(self, key):
+        # Allow accessing config keys like attributes, e.g., config.table_border
+        # Optional, but can be convenient. Standard dict access config['table_border'] is preferred.
+        if key in self:
+            return self[key]
+        raise AttributeError(f"'ExportConfig' object has no attribute '{key}'")
+
+    def __setattr__(self, key, value):
+        # Allow setting config keys like attributes (needed for pygments.dump_image_id update)
+        self[key] = value
+
+
 ######################################################################
 # Section 1 - REGEX patterns, helpers and transformations over text 
 ######################################################################
@@ -84,7 +128,8 @@ CONFIG = {
 
 NEW_LINE = '\n'
 HEADER_PATTERN = re.compile(r'^\s*# (.*)$')
-QUESTION_PATTERN = re.compile(r'^(\s*)\*(\s)(.*)$')
+# QUESTION_PATTERN = re.compile(r'^(\s*)\*(\s)(.*)$')
+QUESTION_PATTERN = re.compile(r'^-{3,}\s*$')
 CORRECT_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)!(.*)$')
 WRONG_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)(.*)$')
 FEEDBACK_PATTERN = re.compile(r'^(\s*)>(.*)$')
@@ -106,6 +151,21 @@ DOUBLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$\$(.+?)\$\$', re.DOTALL)
 BLOCKCODE_PATTERN = re.compile(r'^(\s*)```(.*)$')
 
 TABLE_PATTERN = re.compile(r'\[\[\[(.*)\n([\s\S]+?)\]\]\]', re.MULTILINE)
+
+# These are Moodle emoticon sequences that cause trouble
+_MOODLE_EMOTICONS = [
+    r'\(n\)',   # 👎
+    r'\(y\)',   # 👍
+    r':-\)',    # 🙂
+    r':\)',     # 🙂
+    r':-\(',    # 🙁
+    r':\(',     # 🙁
+    r';-\)',    # 😉
+    r';\)',     # 😉
+]
+
+# Compile one combined regex to detect any emoticon
+_EMOTICON_PATTERN = re.compile('|'.join(_MOODLE_EMOTICONS))
 
 ##
 # Regex helpers
@@ -149,7 +209,8 @@ def get_header(string):
 def get_question(string):
     match = re.match(QUESTION_PATTERN, string)
     if match:
-        return match.group(3)
+        #return match.group(3)
+        return ""
     return None
 
 def get_correct_answer(string):
@@ -190,12 +251,44 @@ def sanitize_entities(text):
         
     return text
 
+def sanitize_moodle_emoticons(text: str) -> str:
+    """
+    Insert a zero-width space (&#8203;) before the last character of any Moodle
+    emoticon so it will not be converted to an emoji.
+    Safe for multiline text and multiple emoticons; idempotent (won’t re-insert).
+    """
+    if not text:
+        return text
+
+    matches = list(_EMOTICON_PATTERN.finditer(text))
+    if not matches:
+        return text
+
+    result = text
+    offset = 0
+
+    for m in matches:
+        start, end = m.start() + offset, m.end() + offset
+        original = result[start:end]
+
+        # Skip if already sanitized
+        if '&#8203;' in original:
+            continue
+
+        sanitized = original[:-1] + '&#8203;' + original[-1]
+        result = result[:start] + sanitized + result[end:]
+        offset += len(sanitized) - len(original)
+
+    return result
+
 def render_answer(text):
     """Replaces any allowed contents, e.g., text, inline code and formulas
      and returns the CDATA content."""
 
     text = re.sub(SINGLE_LINE_CODE_PATTERN, replace_single_line_code, text)
     text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
+
+    text = sanitize_moodle_emoticons(text)
 
     return wrap_cdata( markdown( text ) ) 
 
@@ -209,6 +302,9 @@ def render_question(text, md_dir_path):
     text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, replace_latex_double_dollars, text)
     text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
     text = re.sub(TABLE_PATTERN, replace_table, text)
+
+    text = sanitize_moodle_emoticons(text)
+
     text = wrap_cdata( markdown_custom(text) )
     return text
 
@@ -374,6 +470,15 @@ class Quiz(dict):
         self.section = []
         self[get_header(line)] = self.section
 
+    def start_question(self):
+        """Starts a new question with no content yet."""
+
+        self.current_question = {
+            'text': "", 
+            'answers': []
+            }
+        self.section.append(self.current_question)
+
     def consume_question(self, line):
         """Starts a new question with this content."""
 
@@ -449,6 +554,8 @@ class Quiz(dict):
                     raise QuizError("No correct answer(s) for %s" % (question['text']))
 
                 question['single'] = correct_answer_count == 1
+                question['correct_count'] = correct_answer_count
+
                 weight = round(100.0 / correct_answer_count, 7)
                 for answer in question['answers']:
                     if answer['correct']:
@@ -720,10 +827,14 @@ class MarkdownParser(StateMachine):
             # do nothing
             state = "parse_header"
         elif is_question(line_text):
-            quiz.consume_question(line_text)
+            quiz.start_question()
             state = "parse_question"
-        else:
+        elif is_answer(line_text) or is_feedback(line_text) or is_eof(line_text):
             raise TransitionError("Expecting a question")
+        else:
+            quiz.start_question()
+            quiz.append_to_question(line_text)
+            state = "parse_question"
 
         return state
 
@@ -731,7 +842,9 @@ class MarkdownParser(StateMachine):
     def _state_parse_question(quiz, line_text, line_number):
 
         if is_blank(line_text):
-            # do nothing
+            # add blank line to keep original markdown source
+            # TODO: if_blank and question not empty
+            quiz.append_to_question(line_text)
             state = "parse_question"
         elif is_blockcode(line_text):
             quiz.append_to_question(line_text)
@@ -778,7 +891,7 @@ class MarkdownParser(StateMachine):
             state = "parse_feedback"
         elif is_question(line_text):
             if quiz.current_question_has_correct_answers():
-                quiz.consume_question(line_text)
+                quiz.start_question()
                 state = "parse_question"
             else:
                 raise TransitionError("Expecting at least one correct answer in previous question")
@@ -796,7 +909,7 @@ class MarkdownParser(StateMachine):
             else:
                 raise TransitionError("Expecting at least one correct answer in previous question")
         else:
-            raise TransitionError("Expecting answer, question or header")
+            raise TransitionError("Expecting answer, feedback, question or header")
 
         return state
 
@@ -810,7 +923,7 @@ class MarkdownParser(StateMachine):
             state = "parse_answer"
         elif is_question(line_text):
             if quiz.current_question_has_correct_answers():
-                quiz.consume_question(line_text)
+                quiz.start_question()
                 state = "parse_question"
             else:
                 raise TransitionError("Expecting at least one correct answer in previous question")
@@ -842,7 +955,7 @@ class MarkdownParser(StateMachine):
 ######################################################################    
 
 class QuizExporter(ABC):
-    def __init__(self, quiz):
+    def __init__(self, quiz, config):
         if not quiz:
             raise ValueError("Quiz cannot be None.")
         
@@ -850,6 +963,7 @@ class QuizExporter(ABC):
             raise ValueError("Quiz is not valid.")
         
         self.quiz = quiz
+        self.config = config
 
     @abstractmethod
     def export(self, output_path="."):
@@ -858,16 +972,18 @@ class QuizExporter(ABC):
 
 
 class QuizExporterXML(QuizExporter):
-    def __init__(self, quiz):
-        super().__init__(quiz)
+    def __init__(self, quiz, config):
+        super().__init__(quiz, config)
 
     def export(self, output_path="."):
+        self.quiz.export_xml_to_file(output_path)
+
         logging.info("XML file(s) successfully generated!")
 
 
 class QuizExporterDOCX(QuizExporter):
-    def __init__(self, quiz):
-        super().__init__(quiz)
+    def __init__(self, quiz, config):
+        super().__init__(quiz, config)
 
     def export(self, output_path="."):
         logging.info("DOCX file successfully generated!")
@@ -883,14 +999,14 @@ class QuizExporterDOCX(QuizExporter):
 if __name__ == '__main__':
     # very basic argument usage
     if len(sys.argv) > 3:
-        print("Usage details: python md2moodle.py <md_file> [stdout]")
+        print("Usage details: python3 md2moodle.py <md_file> [stdout]")
         sys.exit()
 
     # Configure log messages
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.INFO # logging.DEBUG 
+        level=logging.DEBUG # logging.DEBUG 
     )
 
     md_file_name = sys.argv[1]
@@ -899,8 +1015,10 @@ if __name__ == '__main__':
         parser = MarkdownParser()
         quiz = parser.parse(md_file_name)
 
-        exporter = QuizExporterXML(quiz)
-        exporter.export()
+        export_config = ExportConfiguration()
+        
+        exporter = QuizExporterXML(quiz, export_config)
+        exporter.export("example")
 
         """
         if quiz:
@@ -913,6 +1031,8 @@ if __name__ == '__main__':
                 quiz.export_xml_to_file(md_file_name)
                 print("XML file(s) successfully generated!")        
         """
+
     except Exception as e:
         print(f"Exception: {e}")
+        traceback.print_exc()
     
