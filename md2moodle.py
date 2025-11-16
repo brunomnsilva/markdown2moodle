@@ -55,33 +55,11 @@ else:
 # Section 0 - Global constants
 ######################################################################
 
-CONFIG = {
-    # Place table borders through css style?
-    'table_border' : False,
-    
-    # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
-    'answer_numbering' : 'abc', 
-    # quiz shuffle answers | 1 -> true ; 0 -> false
-    'shuffle_answers' : '0',
 
-    # in single answer questions, the penalty to apply to a wrong answer in % [0,1]
-    'single_answer_penalty_weight' : 0, #e.g., 0.25 = 25% 
-
-    # pygments code snapshot generator
-    'pygments.font_size' : 16,
-    'pygments.line_numbers' : False,
-
-    # pygments code snapshot | additional dump to disk of generated images
-    'pygments.dump_image' : False,
-    'pygments.dump_image_id' : 1, #e,g, 1.png and incremented for each image
-
-}
-
-class ExportConfiguration(dict):
+class Configuration(dict):
     """
     Stores export-related configuration settings as a dictionary.
-    Allows easy extension, loading from JSON, etc.
-    Does not include parser-specific settings like debug mode.
+    Item values can be overriden in the constructor.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,8 +69,8 @@ class ExportConfiguration(dict):
             'table_border': False,
             # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
             'answer_numbering': 'abc',
-            # quiz shuffle answers | '1' -> true ; '0' -> false
-            'shuffle_answers': '0',
+            # quiz shuffle answers ?
+            'shuffle_answers': True,
             # in single answer questions, the penalty weight for wrong answer [0, 1] -
             'single_answer_penalty_weight': 0,  # e.g., 0.25 means -25% penalty 
             # pygments code snapshot generator
@@ -153,7 +131,7 @@ BLOCKCODE_PATTERN = re.compile(r'^(\s*)```(.*)$')
 TABLE_PATTERN = re.compile(r'\[\[\[(.*)\n([\s\S]+?)\]\]\]', re.MULTILINE)
 
 # These are Moodle emoticon sequences that cause trouble
-_MOODLE_EMOTICONS = [
+MOODLE_EMOTICONS = [
     r'\(n\)',   # 👎
     r'\(y\)',   # 👍
     r':-\)',    # 🙂
@@ -165,7 +143,7 @@ _MOODLE_EMOTICONS = [
 ]
 
 # Compile one combined regex to detect any emoticon
-_EMOTICON_PATTERN = re.compile('|'.join(_MOODLE_EMOTICONS))
+_EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
 
 ##
 # Regex helpers
@@ -232,221 +210,6 @@ def get_answer_feedback(string):
         return match.group(2)
     return None
 
-##
-# REGEX and XML/HTML text transformations
-
-def wrap_cdata(content):
-    """Wraps content inside a CDATA xml block."""
-    return '<![CDATA[' + content + ']]>'
-
-def sanitize_entities(text):
-    """Converts <, >, * and & to html entities."""
-
-    text = text.replace('#','\\#')
-    #unfortunately, this order is important
-    text = text.replace('&','&amp;')
-    text = text.replace('>','&gt;')
-    text = text.replace('<','&lt;')
-    text = text.replace('*','&ast;')    
-        
-    return text
-
-def sanitize_moodle_emoticons(text: str) -> str:
-    """
-    Insert a zero-width space (&#8203;) before the last character of any Moodle
-    emoticon so it will not be converted to an emoji.
-    Safe for multiline text and multiple emoticons; idempotent (won’t re-insert).
-    """
-    if not text:
-        return text
-
-    matches = list(_EMOTICON_PATTERN.finditer(text))
-    if not matches:
-        return text
-
-    result = text
-    offset = 0
-
-    for m in matches:
-        start, end = m.start() + offset, m.end() + offset
-        original = result[start:end]
-
-        # Skip if already sanitized
-        if '&#8203;' in original:
-            continue
-
-        sanitized = original[:-1] + '&#8203;' + original[-1]
-        result = result[:start] + sanitized + result[end:]
-        offset += len(sanitized) - len(original)
-
-    return result
-
-def render_answer(text):
-    """Replaces any allowed contents, e.g., text, inline code and formulas
-     and returns the CDATA content."""
-
-    text = re.sub(SINGLE_LINE_CODE_PATTERN, replace_single_line_code, text)
-    text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
-
-    text = sanitize_moodle_emoticons(text)
-
-    return wrap_cdata( markdown( text ) ) 
-
-def render_question(text, md_dir_path):
-    """Replaces any allowed contents, e.g., code and images
-     and returns the CDATA content."""
-
-    text = re.sub(MULTI_LINE_CODE_PATTERN, replace_multi_line_code, text)
-    text = re.sub(SINGLE_LINE_CODE_PATTERN, replace_single_line_code, text)
-    text = re.sub(IMAGE_PATTERN, replace_image_wrapper(md_dir_path), text)
-    text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, replace_latex_double_dollars, text)
-    text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, replace_latex, text)
-    text = re.sub(TABLE_PATTERN, replace_table, text)
-
-    text = sanitize_moodle_emoticons(text)
-
-    text = wrap_cdata( markdown_custom(text) )
-    return text
-
-def markdown_custom(text):
-    """Just calls markdown, but may be extended in the future."""
-    return markdown(text)
-    
-def replace_table(match):
-    content = match.group(2)
-
-    html = markdown(content, extensions=['tables'])
-
-    if not CONFIG['table_border']:
-        return html
-
-    # Put borders on table. This is not a content issue,
-    # but rather a presentation one. However, the rendering
-    # is nicer for a quiz environment.
-    css_style = """
-        <style type="text/css">
-            div.border_table + table, th, td {
-            border: 1px solid black;
-            border-collapse: collapse;
-            }
-        </style>"""
-
-    return css_style + r"<div class='border_table'>" + html + r"</div>"
-
-
-def replace_latex_double_dollars(match):
-    # Take the part without the $$ at the beginning and at the end
-    code = match.group(1)
-
-    # Replace \\ by \\\\ in code
-    code = code.replace(r"\\", r"\\\\ ")
-
-    # Replace '\{' by '\\{' and '\}' by '\\}'
-    # This must be done after the previous replacement.
-    code = code.replace(r'\{', r'\\{')
-    code = code.replace(r'\}', r'\\}')
-
-    # Remove unnecessary spaces and new lines in order to have \[math_formula\]
-    return "\n \\\\[" +  code.strip() + "\\\\] \n"
-
-
-def replace_latex(match):
-    code = match.group(1)
-    code = code.replace('(', r'\left(')
-    code = code.replace(')', r'\right)')
-    return r'\\(' + code + r'\\)'
-
-def replace_single_line_code(match):
-    """
-    Produces the output for an inline markdown code bock.
-
-    Output should only be wrapped inside a <code> tag.
-    """
-    code = match.group(1)
-    code = sanitize_entities(code)
-
-    return '<code>' + code + '</code>'
-
-
-def replace_multi_line_code(match):
-    lexer = match.group(1)
-    code = match.group(2)
-
-    if not lexer:
-        lexer = ''
-    
-    to_image = True if lexer.find('{img}') > 0 else False
-
-    if to_image:
-        lexer = lexer.replace('{img}', '')
-        return convert_code_image_base64(lexer, code)
-    else:
-        #sanitize entities before any conversion to XML
-        code = sanitize_entities(code)
-        return '<pre><code>' + code + '</code></pre>'
-
-
-def replace_image_wrapper(md_dir_path):
-    def replace_image(match):
-        file_name = match.group(1)
-        if (not os.path.isabs(file_name)) and ('://' not in file_name):
-            file_name = os.path.join(md_dir_path, file_name)
-        return build_image_tag(file_name)
-    return replace_image
-
-
-def build_image_tag(file_name):
-    extension = file_name.split('.')[-1]
-    try:
-        data = urlopen(file_name).read()
-    except Exception:
-        f = open(file_name, 'rb')
-        data = f.read()
-    base64_image = (base64.b64encode(data)).decode('utf-8')
-    src_part = 'data:image/' + extension + ';base64,' + base64_image
-    return '<img style="display:block;" src="' + src_part + '" />'
-
-def convert_code_image_base64(lexer_name, code):
-    """Converts a code snippet to an image in base64 format."""
-    
-    from pygments import highlight
-    from pygments.lexers import get_lexer_by_name
-    from pygments.formatters import ImageFormatter
-    from pygments.lexers import ClassNotFound
-    import tempfile
-
-    if not lexer_name:
-        lexer_name = 'pascal'
-    try:
-        lexer = get_lexer_by_name(lexer_name)
-    except ClassNotFound:
-        lexer = get_lexer_by_name('pascal')
-
-    imgBytes = highlight(code, lexer,\
-                        ImageFormatter(font_size=CONFIG['pygments.font_size'],\
-                            line_numbers = CONFIG['pygments.line_numbers']))
-
-    if CONFIG['pygments.dump_image']:
-        img_id = CONFIG['pygments.dump_image_id']
-
-        imgFile = './' + str(img_id) + '.png'
-        with open(imgFile, 'wb') as imageOut:
-            imageOut.write(imgBytes)
-        
-        img_id += 1
-        CONFIG['pygments.dump_image_id'] = img_id
-
-    temp = tempfile.NamedTemporaryFile()
-    temp.write(imgBytes)
-    temp.seek(0)
-
-    extension = 'png'
-    base64_image = (base64.b64encode(temp.read())).decode('utf-8')
-    src_part = 'data:image/' + extension + ';base64,' + base64_image
-    
-    temp.close()
-    return '<img style="display:block;" src="' + src_part + '" />'
-
 
 ######################################################################
 # Section 2 - Quiz class, helper functions and constants
@@ -456,11 +219,12 @@ class QuizError(Exception):
     pass
 
 class Quiz(dict):
-    def __init__(self, *args, default=None, **kwargs):
+    def __init__(self, *args, config, default=None, **kwargs):
         super().__init__(*args, **kwargs)
         
         self.section = [] 
         self.current_question = {}
+        self.config = config
 
         self.is_valid = False
 
@@ -537,10 +301,10 @@ class Quiz(dict):
 
     def validate(self):
         """Must call after successful parse of document."""
-        self.__complete()
+        self._complete()
         self.is_valid = True        
 
-    def __complete(self):
+    def _complete(self):
         """Completes parsed information with 'fraction' values for answers."""
 
         for key in self:
@@ -562,134 +326,9 @@ class Quiz(dict):
                         answer['weight'] = weight
                     else:
                         if question['single']:
-                            answer['weight'] = CONFIG['single_answer_penalty_weight'] * -1
+                            answer['weight'] = self.config['single_answer_penalty_weight'] * -1
                         else:
                             answer['weight'] = 0
-
-    def export_xml_to_file(self, md_file_name):
-        """Produces the XML file outputs; one for each specified category in the md file."""
-        if self.is_valid:            
-            md_dir_path = os.path.dirname(os.path.abspath(md_file_name))
-
-            for section_caption in self:
-                section = self[section_caption]
-                xml_file = open(create_output_filename(md_file_name, section_caption), 'w')
-                # xml_file.write(section_to_xml(section, md_dir_path))
-                # Prettify xml
-                tmp = xml.dom.minidom.parseString(section_to_xml(section_caption, section, md_dir_path))
-                xml_file.write(tmp.toprettyxml())
-
-                # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
-
-        else:
-            logging.error("Quiz is not marked as valid for export.")
-
-    def export_xml_to_string(self, md_file_name):
-        """Produces the XML output and returns the resulting text."""
-        if self.is_valid:
-            md_dir_path = os.getcwd()
-            result = {}            
-            for section_caption in self:
-                section = self[section_caption]
-                result[section_caption] = section_to_xml(section_caption, section, md_dir_path)
-            return json.dumps(result, indent=2)
-        else:
-            logging.error("Quiz is not marked as valid for export.")
-            return ""
-        
-        
-def create_output_filename(md_file_name, section_caption):
-    """Generates and sanitizes .xml output filename.
-
-    - All extensions and spaces are removed;
-    - Forward slashes '/' (possible in section caption for sub-categories)
-        are replaced with hyphens.
-    """
-
-    section_caption = section_caption.replace('/','-').replace(' ','')
-    md_name = md_file_name.replace('.md','')
-
-    output_file_name = md_name + '_' + section_caption + '.xml'
-
-    return output_file_name
-
-def section_to_xml(section_caption, section, md_dir_path):
-    """Convert a parsed section to XML
-
-    Keyword arguments:
-    section_caption -- Title of section (used to assign category)
-    section -- dictionary mapped content from 'md_script_to_dictionary'
-    md_dir_path -- path of the markdown file
-    """
-
-    xml = '<?xml version="1.0" ?><quiz>'
-    
-    #create dummy question to specify category for questions
-    xml += '<question type="category"><category><text>' + section_caption + '</text></category></question>'
-    
-    #add parsed questions
-    for index, question in enumerate(section):
-        xml += question_to_xml(question, index, md_dir_path)
-    xml += '</quiz>'
-    return xml
-
-
-def question_to_xml(question, index, md_dir_path):
-    """
-    Converts a parsed question to XML.
-
-    <name> is automatically generated from a hash (question text + rand)
-    <single> is derived from correct answers (1/0)
-    <questiontext> is encoded in CDATA and html format
-    """
-
-    #convert question text to CDATA html
-    rendered_question_text = render_question(question['text'], md_dir_path)
-
-    index_part = str(index + 1).rjust(4, '0')
-    q_part = (question['text'] + str(random.random())).encode('utf-8')
-    question_single_status = ('true' if question['single'] else 'false')
-    
-    xml = '<question type="multichoice">'
-    # question name
-    xml += '<name><text>'
-    xml += index_part + hashlib.md5(q_part).hexdigest()
-    xml += '</text></name>'
-    # question text
-    xml += '<questiontext format="html"><text>'
-    xml += rendered_question_text
-    xml += '</text></questiontext>'
-    # answer
-    for answer in question['answers']:
-        xml += answer_to_xml(answer)
-    
-    # other properties
-    xml += '<shuffleanswers>' + CONFIG['shuffle_answers'] + '</shuffleanswers>'
-    xml += '<single>' + question_single_status + '</single>'
-    xml += '<answernumbering>' + CONFIG['answer_numbering'] + '</answernumbering>'
-    xml += '</question>'
-    return xml
-
-
-def answer_to_xml(answer):
-    """Produces the XML output for an answer."""
-
-    text = answer['text']
-
-    #make any necessary transformatins to answer
-    text = render_answer(text)
-
-    xml = '<answer fraction="'+str(answer['weight'])+'">'
-    xml += '<text>'+text+'</text>'
-    
-    if answer['feedback']:
-        # we allow formulas and tex in the feedback, so
-        # use the existing answer rendering function
-        feedback = render_answer( answer['feedback'] )
-        xml += '<feedback><text>'+feedback+'</text></feedback>'
-
-    xml += '</answer>'
-    return xml
 
 
 ######################################################################
@@ -753,8 +392,10 @@ class StateMachine:
 ######################################################################
 
 class MarkdownParser(StateMachine):
-    def __init__(self):
+    def __init__(self, quiz):
         super().__init__()
+
+        self.quiz = quiz
 
         # Add states and transitions to the FSM
         self.add_state("start", self._state_start)
@@ -772,9 +413,6 @@ class MarkdownParser(StateMachine):
         md_script = None
         with open(md_file_name, "r") as md_file:
             md_script = md_file.read()
-        
-        # Quiz instance 
-        quiz = Quiz()
 
         # Split into lines and put "EOF" at the end
         md_lines = md_script.split(NEW_LINE)
@@ -787,7 +425,7 @@ class MarkdownParser(StateMachine):
                 md_row = md_row.rstrip('\r')
                 md_row = md_row.rstrip('\n')
                 
-                self.run(quiz, md_row, line_number)
+                self.run(self.quiz, md_row, line_number)
 
                 line_number += 1
             
@@ -795,7 +433,6 @@ class MarkdownParser(StateMachine):
             logging.error("Error at line %d: %s." % (line_number, e))
             quiz = None
 
-        return quiz
     
     ##
     # FSM State handlers - These implement the transitions and their actions
@@ -955,41 +592,374 @@ class MarkdownParser(StateMachine):
 ######################################################################    
 
 class QuizExporter(ABC):
-    def __init__(self, quiz, config):
+    def __init__(self, quiz):
         if not quiz:
             raise ValueError("Quiz cannot be None.")
         
         if not quiz.is_valid:
-            raise ValueError("Quiz is not valid.")
+            raise ValueError("Quiz is not valid. Cannot be exported.")
         
         self.quiz = quiz
-        self.config = config
+
+        # copy reference of quiz config
+        self.config = quiz.config
 
     @abstractmethod
     def export(self, output_path="."):
         pass
 
 
+# class QuizExporterDOCX(QuizExporter):
+#     def __init__(self, quiz, config):
+#         super().__init__(quiz, config)
 
-class QuizExporterXML(QuizExporter):
-    def __init__(self, quiz, config):
-        super().__init__(quiz, config)
+#     def export(self, output_path="."):
+#         logging.info("DOCX file successfully generated!")
+        
+
+class XMLExporter(QuizExporter):
+    def __init__(self, quiz):
+        super().__init__(quiz)
+
 
     def export(self, output_path="."):
-        self.quiz.export_xml_to_file(output_path)
+        self.export_xml_to_file(output_path)
 
         logging.info("XML file(s) successfully generated!")
+    
+    def export_xml_to_file(self, md_file_name):
+        """Produces the XML file outputs; one for each specified category in the md file."""
+        if self.quiz.is_valid:            
+            md_dir_path = os.path.dirname(os.path.abspath(md_file_name))
+
+            for section_caption in self.quiz:
+                section = self.quiz[section_caption]
+                xml_file = open(self.create_output_filename(md_file_name, section_caption), 'w')
+                # xml_file.write(section_to_xml(section, md_dir_path))
+                # Prettify xml
+                tmp = xml.dom.minidom.parseString(self.section_to_xml(section_caption, section, md_dir_path))
+                xml_file.write(tmp.toprettyxml())
+
+                # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
+
+        else:
+            logging.error("Quiz is not marked as valid for export.")
+
+    def export_xml_to_string(self, md_file_name):
+        """Produces the XML output and returns the resulting text."""
+        if self.is_valid:
+            md_dir_path = os.getcwd()
+            result = {}            
+            for section_caption in self:
+                section = self[section_caption]
+                result[section_caption] = self.section_to_xml(section_caption, section, md_dir_path)
+            return json.dumps(result, indent=2)
+        else:
+            logging.error("Quiz is not marked as valid for export.")
+            return ""
+        
+
+    def create_output_filename(self, md_file_name, section_caption):
+        """Generates and sanitizes .xml output filename.
+
+        - All extensions and spaces are removed;
+        - Forward slashes '/' (possible in section caption for sub-categories)
+            are replaced with hyphens.
+        """
+
+        section_caption = section_caption.replace('/','-').replace(' ','')
+        md_name = md_file_name.replace('.md','')
+
+        output_file_name = md_name + '_' + section_caption + '.xml'
+
+        return output_file_name
+
+    def section_to_xml(self, section_caption, section, md_dir_path):
+        """Convert a parsed section to XML
+
+        Keyword arguments:
+        section_caption -- Title of section (used to assign category)
+        section -- dictionary mapped content from 'md_script_to_dictionary'
+        md_dir_path -- path of the markdown file
+        """
+
+        xml = '<?xml version="1.0" ?><quiz>'
+        
+        #create dummy question to specify category for questions
+        xml += '<question type="category"><category><text>' + section_caption + '</text></category></question>'
+        
+        #add parsed questions
+        for index, question in enumerate(section):
+            xml += self.question_to_xml(question, index, md_dir_path)
+        xml += '</quiz>'
+        return xml
 
 
-class QuizExporterDOCX(QuizExporter):
-    def __init__(self, quiz, config):
-        super().__init__(quiz, config)
+    def question_to_xml(self, question, index, md_dir_path):
+        """
+        Converts a parsed question to XML.
 
-    def export(self, output_path="."):
-        logging.info("DOCX file successfully generated!")
+        <name> is automatically generated from a hash (question text + rand)
+        <single> is derived from correct answers (1/0)
+        <questiontext> is encoded in CDATA and html format
+        """
+
+        #convert question text to CDATA html
+        rendered_question_text = self._render_question(question['text'], md_dir_path)
+
+        index_part = str(index + 1).rjust(4, '0')
+        q_part = (question['text'] + str(random.random())).encode('utf-8')
+        question_single_status = ('true' if question['single'] else 'false')
+        
+        xml = '<question type="multichoice">'
+        # question name
+        xml += '<name><text>'
+        xml += index_part + hashlib.md5(q_part).hexdigest()
+        xml += '</text></name>'
+        # question text
+        xml += '<questiontext format="html"><text>'
+        xml += rendered_question_text
+        xml += '</text></questiontext>'
+        # answer
+        for answer in question['answers']:
+            xml += self.answer_to_xml(answer)
+        
+        # other properties
+        shuffleValue = "1" if self.config['shuffle_answers'] else "0"
+
+        xml += '<shuffleanswers>' + shuffleValue + '</shuffleanswers>'
+        xml += '<single>' + question_single_status + '</single>'
+        xml += '<answernumbering>' + self.config['answer_numbering'] + '</answernumbering>'
+        xml += '</question>'
+        return xml
 
 
+    def answer_to_xml(self, answer):
+        """Produces the XML output for an answer."""
 
+        text = answer['text']
+
+        #make any necessary transformatins to answer
+        text = self._render_answer(text)
+
+        xml = '<answer fraction="'+str(answer['weight'])+'">'
+        xml += '<text>'+text+'</text>'
+        
+        if answer['feedback']:
+            # we allow formulas and tex in the feedback, so
+            # use the existing answer rendering function
+            feedback = self._render_answer( answer['feedback'] )
+            xml += '<feedback><text>'+feedback+'</text></feedback>'
+
+        xml += '</answer>'
+        return xml
+
+    def _wrap_cdata(self, content: str) -> str:
+        """Wraps content inside a CDATA xml block."""
+        return '<![CDATA[' + content + ']]>'
+
+    def _sanitize_entities(self, text: str) -> str:
+        """Converts <, >, * and & to html entities."""
+
+        text = text.replace('#','\\#')
+        #unfortunately, this order is important
+        text = text.replace('&','&amp;')
+        text = text.replace('>','&gt;')
+        text = text.replace('<','&lt;')
+        text = text.replace('*','&ast;')    
+            
+        return text
+
+    def _sanitize_moodle_emoticons(self, text: str) -> str:
+        """
+        Insert a zero-width space (&#8203;) before the last character of any Moodle
+        emoticon so it will not be converted to an emoji.
+        Safe for multiline text and multiple emoticons; idempotent (won't re-insert).
+        """
+        if not text:
+            return text
+
+        matches = list(_EMOTICON_PATTERN.finditer(text))
+        if not matches:
+            return text
+
+        result = text
+        offset = 0
+
+        for m in matches:
+            start, end = m.start() + offset, m.end() + offset
+            original = result[start:end]
+
+            # Skip if already sanitized
+            if '&#8203;' in original:
+                continue
+
+            sanitized = original[:-1] + '&#8203;' + original[-1]
+            result = result[:start] + sanitized + result[end:]
+            offset += len(sanitized) - len(original)
+
+        return result
+
+    def _render_answer(self, text):
+        """Replaces any allowed contents, e.g., text, inline code and formulas
+        and returns the CDATA content."""
+
+        text = re.sub(SINGLE_LINE_CODE_PATTERN, self._replace_single_line_code, text)
+        text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, self._replace_latex, text)
+
+        text = self._sanitize_moodle_emoticons(text)
+
+        return self._wrap_cdata( markdown( text ) ) 
+
+    def _render_question(self, text, md_dir_path):
+        """Replaces any allowed contents, e.g., code and images
+        and returns the CDATA content."""
+
+        text = re.sub(MULTI_LINE_CODE_PATTERN, self._replace_multi_line_code, text)
+        text = re.sub(SINGLE_LINE_CODE_PATTERN, self._replace_single_line_code, text)
+        text = re.sub(IMAGE_PATTERN, self._replace_image_wrapper(md_dir_path), text)
+        text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, self._replace_latex_double_dollars, text)
+        text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, self._replace_latex, text)
+        text = re.sub(TABLE_PATTERN, self._replace_table, text)
+
+        text = self._sanitize_moodle_emoticons(text)
+
+        text = self._wrap_cdata( self._markdown_custom(text) )
+        return text
+
+    def _markdown_custom(self, text):
+        """Just calls markdown, but may be extended in the future."""
+        return markdown(text)
+    
+    def _replace_table(self, match):
+        content = match.group(2)
+
+        html = markdown(content, extensions=['tables'])
+
+        if not self.config['table_border']:
+            return html
+
+        # Put borders on table. This is not a content issue,
+        # but rather a presentation one. However, the rendering
+        # is nicer for a quiz environment.
+        css_style = """
+            <style type="text/css">
+                div.border_table + table, th, td {
+                border: 1px solid black;
+                border-collapse: collapse;
+                }
+            </style>"""
+
+        return css_style + r"<div class='border_table'>" + html + r"</div>"
+
+    def _replace_latex_double_dollars(self, match):
+        # Take the part without the $$ at the beginning and at the end
+        code = match.group(1)
+
+        # Replace \\ by \\\\ in code
+        code = code.replace(r"\\", r"\\\\ ")
+
+        # Replace '\{' by '\\{' and '\}' by '\\}'
+        # This must be done after the previous replacement.
+        code = code.replace(r'\{', r'\\{')
+        code = code.replace(r'\}', r'\\}')
+
+        # Remove unnecessary spaces and new lines in order to have \[math_formula\]
+        return "\n \\\\[" +  code.strip() + "\\\\] \n"
+
+    def _replace_latex(self, match):
+        code = match.group(1)
+        code = code.replace('(', r'\left(')
+        code = code.replace(')', r'\right)')
+        return r'\\(' + code + r'\\)'
+
+    def _replace_single_line_code(self, match):
+        """
+        Produces the output for an inline markdown code bock.
+
+        Output should only be wrapped inside a <code> tag.
+        """
+        code = match.group(1)
+        code = self._sanitize_entities(code)
+
+        return '<code>' + code + '</code>'
+
+    def _replace_multi_line_code(self, match):
+        lexer = match.group(1)
+        code = match.group(2)
+
+        if not lexer:
+            lexer = ''
+        
+        to_image = True if lexer.find('{img}') > 0 else False
+
+        if to_image:
+            lexer = lexer.replace('{img}', '')
+            return self._convert_code_image_base64(lexer, code)
+        else:
+            #sanitize entities before any conversion to XML
+            code = self._sanitize_entities(code)
+            return '<pre><code>' + code + '</code></pre>'
+
+    def _replace_image_wrapper(self, md_dir_path):
+        def replace_image(match):
+            file_name = match.group(1)
+            if (not os.path.isabs(file_name)) and ('://' not in file_name):
+                file_name = os.path.join(md_dir_path, file_name)
+            return self._build_image_tag(file_name)
+        return replace_image
+
+    def _build_image_tag(self, file_name):
+        extension = file_name.split('.')[-1]
+        try:
+            data = urlopen(file_name).read()
+        except Exception:
+            f = open(file_name, 'rb')
+            data = f.read()
+        base64_image = (base64.b64encode(data)).decode('utf-8')
+        src_part = 'data:image/' + extension + ';base64,' + base64_image
+        return '<img style="display:block;" src="' + src_part + '" />'
+
+    def _convert_code_image_base64(self, lexer_name, code):
+        """Converts a code snippet to an image in base64 format."""
+        
+        from pygments import highlight
+        from pygments.lexers import get_lexer_by_name
+        from pygments.formatters import ImageFormatter
+        from pygments.lexers import ClassNotFound
+        import tempfile
+
+        if not lexer_name:
+            lexer_name = 'pascal'
+        try:
+            lexer = get_lexer_by_name(lexer_name)
+        except ClassNotFound:
+            lexer = get_lexer_by_name('pascal')
+
+        imgBytes = highlight(code, lexer,\
+                            ImageFormatter(font_size = self.config['pygments.font_size'],\
+                                line_numbers = self.config['pygments.line_numbers']))
+
+        if self.config['pygments.dump_image']:
+            img_id = self.config['pygments.dump_image_id']
+
+            imgFile = './' + str(img_id) + '.png'
+            with open(imgFile, 'wb') as imageOut:
+                imageOut.write(imgBytes)
+            
+            img_id += 1
+            self.config['pygments.dump_image_id'] = img_id
+
+        temp = tempfile.NamedTemporaryFile()
+        temp.write(imgBytes)
+        temp.seek(0)
+
+        extension = 'png'
+        base64_image = (base64.b64encode(temp.read())).decode('utf-8')
+        src_part = 'data:image/' + extension + ';base64,' + base64_image
+        
+        temp.close()
+        return '<img style="display:block;" src="' + src_part + '" />'
 
 
 ######################################################################
@@ -1012,12 +982,17 @@ if __name__ == '__main__':
     md_file_name = sys.argv[1]
 
     try:
-        parser = MarkdownParser()
-        quiz = parser.parse(md_file_name)
+        config = Configuration({
+            "pygments.font_size": 16,
+            "shuffle_answers" : False
+        })
 
-        export_config = ExportConfiguration()
+        quiz = Quiz(config=config)
+
+        parser = MarkdownParser(quiz)
+        parser.parse(md_file_name)
         
-        exporter = QuizExporterXML(quiz, export_config)
+        exporter = XMLExporter(quiz)
         exporter.export("example")
 
         """
