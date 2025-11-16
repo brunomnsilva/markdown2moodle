@@ -629,21 +629,21 @@ class XMLExporter(QuizExporter):
 
 
     def export(self, output_path="."):
-        self.export_xml_to_file(output_path)
+        self._export_xml_to_file(output_path)
 
         logging.info("XML file(s) successfully generated!")
     
-    def export_xml_to_file(self, output_path):
+    def _export_xml_to_file(self, output_path):
         """Produces the XML file outputs; one for each specified category in the md file."""
         if self.quiz.is_valid:            
             md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
 
             for section_caption in self.quiz:
                 section = self.quiz[section_caption]
-                xml_file = open(self.create_output_filename(md_file_name, section_caption, output_path), 'w')
+                xml_file = open(self._create_output_filename(md_file_name, section_caption, output_path), 'w')
                 # xml_file.write(section_to_xml(section, md_dir_path))
                 # Prettify xml
-                tmp = xml.dom.minidom.parseString(self.section_to_xml(section_caption, section, md_dir_path))
+                tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section, md_dir_path))
                 xml_file.write(tmp.toprettyxml())
 
                 # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
@@ -651,21 +651,21 @@ class XMLExporter(QuizExporter):
         else:
             logging.error("Quiz is not marked as valid for export.")
 
-    def export_xml_to_string(self, md_file_name):
+    def _export_xml_to_string(self, md_file_name):
         """Produces the XML output and returns the resulting text."""
         if self.is_valid:
             md_dir_path = os.getcwd()
             result = {}            
             for section_caption in self:
                 section = self[section_caption]
-                result[section_caption] = self.section_to_xml(section_caption, section, md_dir_path)
+                result[section_caption] = self._section_to_xml(section_caption, section, md_dir_path)
             return json.dumps(result, indent=2)
         else:
             logging.error("Quiz is not marked as valid for export.")
             return ""
         
 
-    def create_output_filename(self, md_file_name, section_caption, output_path=None):
+    def _create_output_filename(self, md_file_name, section_caption, output_path=None):
         """Generates and sanitizes .xml output filename.
 
         - Sanitizes section caption
@@ -691,7 +691,7 @@ class XMLExporter(QuizExporter):
         # Join directory + filename
         return os.path.join(output_path, output_file_name)
 
-    def section_to_xml(self, section_caption, section, md_dir_path):
+    def _section_to_xml(self, section_caption, section, md_dir_path):
         """Convert a parsed section to XML
 
         Keyword arguments:
@@ -707,12 +707,12 @@ class XMLExporter(QuizExporter):
         
         #add parsed questions
         for index, question in enumerate(section):
-            xml += self.question_to_xml(question, index, md_dir_path)
+            xml += self._question_to_xml(question, index, md_dir_path)
         xml += '</quiz>'
         return xml
 
 
-    def question_to_xml(self, question, index, md_dir_path):
+    def _question_to_xml(self, question, index, md_dir_path):
         """
         Converts a parsed question to XML.
 
@@ -739,7 +739,7 @@ class XMLExporter(QuizExporter):
         xml += '</text></questiontext>'
         # answer
         for answer in question['answers']:
-            xml += self.answer_to_xml(answer)
+            xml += self._answer_to_xml(answer)
         
         # other properties
         shuffleValue = "1" if self.config['shuffle_answers'] else "0"
@@ -751,7 +751,7 @@ class XMLExporter(QuizExporter):
         return xml
 
 
-    def answer_to_xml(self, answer):
+    def _answer_to_xml(self, answer):
         """Produces the XML output for an answer."""
 
         text = answer['text']
