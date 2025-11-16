@@ -228,6 +228,9 @@ class Quiz(dict):
 
         self.is_valid = False
 
+        # Source filename (to be injected by the parser)
+        self.source = None
+
     def consume_header(self, line):
         """Starts a new section with this header."""
 
@@ -407,6 +410,9 @@ class MarkdownParser(StateMachine):
         self.add_state("end", self._state_end, end_state = True)
 
     def parse(self, md_file_name):
+        # Save source filename in quiz
+        self.quiz.source = md_file_name
+
         # Set start state 
         self.set_start("start")
 
@@ -627,14 +633,14 @@ class XMLExporter(QuizExporter):
 
         logging.info("XML file(s) successfully generated!")
     
-    def export_xml_to_file(self, md_file_name):
+    def export_xml_to_file(self, output_path):
         """Produces the XML file outputs; one for each specified category in the md file."""
         if self.quiz.is_valid:            
-            md_dir_path = os.path.dirname(os.path.abspath(md_file_name))
+            md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
 
             for section_caption in self.quiz:
                 section = self.quiz[section_caption]
-                xml_file = open(self.create_output_filename(md_file_name, section_caption), 'w')
+                xml_file = open(self.create_output_filename(md_file_name, section_caption, output_path), 'w')
                 # xml_file.write(section_to_xml(section, md_dir_path))
                 # Prettify xml
                 tmp = xml.dom.minidom.parseString(self.section_to_xml(section_caption, section, md_dir_path))
@@ -659,20 +665,31 @@ class XMLExporter(QuizExporter):
             return ""
         
 
-    def create_output_filename(self, md_file_name, section_caption):
+    def create_output_filename(self, md_file_name, section_caption, output_path=None):
         """Generates and sanitizes .xml output filename.
 
-        - All extensions and spaces are removed;
-        - Forward slashes '/' (possible in section caption for sub-categories)
-            are replaced with hyphens.
+        - Sanitizes section caption
+        - Strips .md extension
+        - Builds filename
+        - Optionally prefixes output directory (absolute or relative)
+        - Ensures the directory exists
         """
 
-        section_caption = section_caption.replace('/','-').replace(' ','')
-        md_name = md_file_name.replace('.md','')
+        # Sanitize caption
+        section_caption = section_caption.replace('/', '-').replace(' ', '')
+        md_name = md_file_name.replace('.md', '')
 
-        output_file_name = md_name + '_' + section_caption + '.xml'
+        output_file_name = f"{md_name}_{section_caption}.xml"
 
-        return output_file_name
+        # If no output path provided, return just the filename
+        if not output_path:
+            return output_file_name
+
+        # Ensure directory exists (works for relative & absolute paths)
+        os.makedirs(output_path, exist_ok=True)
+
+        # Join directory + filename
+        return os.path.join(output_path, output_file_name)
 
     def section_to_xml(self, section_caption, section, md_dir_path):
         """Convert a parsed section to XML
@@ -976,36 +993,28 @@ if __name__ == '__main__':
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.DEBUG # logging.DEBUG 
+        level=logging.INFO # INFO, DEBUG 
     )
 
     md_file_name = sys.argv[1]
 
     try:
+        # Create config instance and change default values, if needed
         config = Configuration({
             "pygments.font_size": 16,
             "shuffle_answers" : False
         })
 
+        # Create the quiz instance with configuration
         quiz = Quiz(config=config)
 
+        # Create parser instance and parse document into quiz instance
         parser = MarkdownParser(quiz)
         parser.parse(md_file_name)
         
+        # Create exporter instance and export quiz
         exporter = XMLExporter(quiz)
-        exporter.export("example")
-
-        """
-        if quiz:
-            if len(sys.argv) > 2:
-                #outputs to JSON containing the XML per section
-                xml = quiz.export_xml_to_string(md_file_name)
-                print(xml)
-            else:
-                #creates and outputs to XML files
-                quiz.export_xml_to_file(md_file_name)
-                print("XML file(s) successfully generated!")        
-        """
+        exporter.export(".xml/")
 
     except Exception as e:
         print(f"Exception: {e}")
