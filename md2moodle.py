@@ -1036,7 +1036,7 @@ if __name__ == '__main__':
         
         # Create exporter instance and export quiz
         exporter = XMLExporter(quiz)
-        exporter.export("./xml/")
+        exporter.export("./out/")
 
     except Exception as e:
         print(f"Exception: {e}")

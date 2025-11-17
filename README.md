@@ -22,6 +22,8 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
     * Some Moodle instances can have an *emoticon parser* activated, that will, for example, change `(n)`, e.g., in `fib(n)`, into `fib👎`. All *emoticons*  are dealt properly - inserting zero-width spacing to fool the Moodle parser. If you still wish to include *emojis*, just put the unicode character in the source file. 
 
+    * Generated output files are placed in a local `out` directory.
+
     * Started some code refactoring to allow different output formats in the future - currently only *Moodle XML format* is available.
 
 * Version 1 (until Jul 21, 2024)
