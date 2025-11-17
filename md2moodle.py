@@ -41,6 +41,7 @@ from markdown import markdown
 import logging
 
 import traceback
+import textwrap
 
 # To prettify xml
 import xml.dom.minidom
@@ -146,7 +147,7 @@ MOODLE_EMOTICONS = [
 EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
 
 # HTML comments (to strip from output)
-HTML_COMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
+HTML_COMMENT = re.compile(r'<!--[\s\S]*?-->', re.MULTILINE)
 
 ##
 # Regex helpers
@@ -842,6 +843,8 @@ class XMLExporter(QuizExporter):
         """Replaces any allowed contents, e.g., code and images
         and returns the CDATA content."""
 
+        text = self._remove_html_comments(text)
+
         text = re.sub(MULTI_LINE_CODE_PATTERN, self._replace_multi_line_code, text)
         text = re.sub(SINGLE_LINE_CODE_PATTERN, self._replace_single_line_code, text)
         text = re.sub(IMAGE_PATTERN, self._replace_image_wrapper(md_dir_path), text)
@@ -849,9 +852,7 @@ class XMLExporter(QuizExporter):
         text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, self._replace_latex, text)
         text = re.sub(TABLE_PATTERN, self._replace_table, text)
 
-        text = self._sanitize_moodle_emoticons(text)
-
-        text = self._remove_html_comments(text)
+        text = self._sanitize_moodle_emoticons(text)        
 
         text = self._wrap_cdata( self._markdown_custom(text) )
         return text
@@ -871,13 +872,16 @@ class XMLExporter(QuizExporter):
         # Put borders on table. This is not a content issue,
         # but rather a presentation one. However, the rendering
         # is nicer for a quiz environment.
-        css_style = """
+        # CSS string must not have any indentation, otherwise python-markdown
+        # will consider it as a code block ("<pre><code>").
+        css_style = textwrap.dedent("""
             <style type="text/css">
-                div.border_table + table, th, td {
+            div.border_table + table, th, td {
                 border: 1px solid black;
                 border-collapse: collapse;
-                }
-            </style>"""
+            }
+            </style>
+            """).strip()
 
         return css_style + r"<div class='border_table'>" + html + r"</div>"
 
@@ -1005,7 +1009,7 @@ if __name__ == '__main__':
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.INFO # INFO, DEBUG 
+        level=logging.DEBUG # INFO, DEBUG 
     )
 
     md_file_name = sys.argv[1]
@@ -1014,7 +1018,8 @@ if __name__ == '__main__':
         # Create config instance and change default values, if needed
         config = Configuration({
             "pygments.font_size": 16,
-            "shuffle_answers" : False
+            "shuffle_answers" : False,
+            'table_border': True,
         })
 
         # Create the quiz instance with configuration
@@ -1026,7 +1031,7 @@ if __name__ == '__main__':
         
         # Create exporter instance and export quiz
         exporter = XMLExporter(quiz)
-        exporter.export(".xml/")
+        exporter.export("./xml/")
 
     except Exception as e:
         print(f"Exception: {e}")
