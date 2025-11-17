@@ -972,7 +972,7 @@ class XMLExporter(QuizExporter):
         try:
             lexer = get_lexer_by_name(lexer_name)
         except ClassNotFound:
-            lexer = get_lexer_by_name('pascal')
+            lexer = get_lexer_by_name('console')
 
         imgBytes = highlight(code, lexer,\
                             ImageFormatter(font_size = self.config['pygments.font_size'],\
