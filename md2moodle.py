@@ -53,7 +53,7 @@ else:
     from urllib import urlopen
 
 ######################################################################
-# Section 0 - Global constants
+# Section 0 - Configuration and defaults
 ######################################################################
 
 
@@ -219,7 +219,7 @@ def get_answer_feedback(string):
 
 
 ######################################################################
-# Section 2 - Quiz class, helper functions and constants
+# Section 2 - Quiz class
 ######################################################################
 
 class QuizError(Exception):
@@ -603,7 +603,7 @@ class MarkdownParser(StateMachine):
         pass
 
 ######################################################################
-# Section ? - QuizExporter
+# Section 5 - QuizExporters
 ######################################################################    
 
 class QuizExporter(ABC):
@@ -1001,7 +1001,7 @@ class XMLExporter(QuizExporter):
 
 
 ######################################################################
-# Section 5 - Main
+# Section 6 - Main Program
 ######################################################################
 
 if __name__ == '__main__':
@@ -1014,7 +1014,7 @@ if __name__ == '__main__':
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.DEBUG # INFO, DEBUG 
+        level=logging.INFO # INFO, DEBUG 
     )
 
     md_file_name = sys.argv[1]
@@ -1022,9 +1022,9 @@ if __name__ == '__main__':
     try:
         # Create config instance and change default values, if needed
         config = Configuration({
-            "pygments.font_size": 16,
-            "shuffle_answers" : False,
-            'table_border': True,
+            #"pygments.font_size": 16,
+            #"shuffle_answers" : False,
+            #'table_border': True,
         })
 
         # Create the quiz instance with configuration
