@@ -9,19 +9,36 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
 ## Features and Limitations
 
-* Each *markdown* file can have any number of categories, sub-categories and questions.
+> [!WARNING]
+> Version 2 breaks the previous input format.
+>
+> You can still use Version 1 from the **Releases** section.
 
-* Questions can contain text, latex math expressions (single and double dollar), code blocks, inline code and images;
+* Version 2 (since Nov 17, 2025 -- current working tree)
 
-* Answers only allow text, latex expressions and inline code;
+    * The new quiz format now requires starting a question with `---` (with optional content following it). This allows for more complex content, including *bullet lists* without any "hacks" (e.g., use of `+` for unordered lists).
 
-* Code blocks can be converted into images that are embedded into the XML file. The lexer specifies the language that will be used for syntax highlighting. This happens when using the `{img}` option (see [example.md](example.md));
+    * We can include html comments `<!-- -->` that will be striped out from the output.
 
-* The markdown format and parser only predict **multiple choice** questions at this time, although `true/false` questions can be easily replicated (see [example.md](example.md));
+    * Some Moodle instances can have an *emoticon parser* activated, that will, for example, change `(n)`, e.g., in `fib(n)`, into `fib👎`. All *emoticons*  are dealt properly - inserting zero-width spacing to fool the Moodle parser. If you still wish to include *emojis*, just put the unicode character in the source file. 
 
-* <del>Markdown Tables are not supported yet;</del>  Markdown tables supported through `[[[ ]]]` *custom environment* (see [example.md](example.md))
+    * Started some code refactoring to allow different output formats in the future - currently only *Moodle XML format* is available.
 
-* <del>Question and answer feedback are not supported yet.</del> Answer feedback can be provided, using the `>` symbol (see [example.md](example.md))
+* Version 1 (until Jul 21, 2024)
+
+    * Each *markdown* file can have any number of categories, sub-categories and questions.
+
+    * Questions can contain text, latex math expressions (single and double dollar), code blocks, inline code and images;
+
+    * Answers only allow text, latex expressions and inline code;
+
+    * Code blocks can be converted into images that are embedded into the XML file. The lexer specifies the language that will be used for syntax highlighting. This happens when using the `{img}` option (see [example.md](example.md));
+
+    * The markdown format and parser only predict **multiple choice** questions at this time, although `true/false` questions can be easily replicated (see [example.md](example.md));
+
+    * <del>Markdown Tables are not supported yet;</del>  Markdown tables supported through `[[[ ]]]` *custom environment* (see [example.md](example.md))
+
+    * <del>Question and answer feedback are not supported yet.</del> Answer feedback can be provided, using the `>` symbol (see [example.md](example.md))
 
 ## Example
 
@@ -32,21 +49,20 @@ Nonetheless, a portion of it to illustrate the quiz format in markdown is presen
 ~~~markdown
 # DummyCategory/Programming/ADT
 
-* Consider the following function:
+Consider the following function:
 
 $$fib(n)=\left\{\begin{matrix} 1 & n = 0\\  1 & n = 1\\ fib(n-1) + fib(n-2) & n > 1 \end{matrix}\right.$$
 
 Mark the correct statements about `fib(n)`:
 
-    - !It's a recursive function
+- !It's a recursive function
+- It's defined for all integers
+- It has $O(n)$ time complexity
+- !It has $O(2^n)$ time complexity
 
-    - It's defined for all integers
+---
 
-    - It has $O(n)$ time complexity
-
-    - !It has $O(2^n)$ time complexity
-
-* Consider the following code that uses the ADT Stack:
+Consider the following code that uses the ADT Stack:
 
 ```cpp
 PtStack s1 = stackCreate(10);
@@ -68,12 +84,15 @@ while(!stackIsEmpty(s1)) {
 ```
 
 What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the second loop?
-    - !`s1 = {} e s2 = {10}`
-    - `s1 = {1,2,3,4} e s2 = {4,7,9,10}`
-    - `s1 = {} e s2 = {6}`
-    - Other answer
 
-* Consider the parcial specification of the ADT Complex and the following code:
+- !`s1 = {} e s2 = {10}`
+- `s1 = {1,2,3,4} e s2 = {4,7,9,10}`
+- `s1 = {} e s2 = {6}`
+- Other answer
+
+---
+
+Consider the parcial specification of the ADT Complex and the following code:
 
 ```cpp{img}
 #define COMPLEX_OK      0
@@ -96,23 +115,26 @@ PtComplex a = complexCreate(1, 8);
 ```
 
 How to get the imaginary component of the complex number `a`?
-    - !`double im = 0; complexIm(a, &im);`
-    - `int im = complexIm(a);`
-    - `double im = a->im;`
-    - `double im = 0; complexIm(a, im);`
 
-* Consider the following two approaches for implementing the **ADT Stack** using an *array list*:
+- !`double im = 0; complexIm(a, &im);`
+- `int im = complexIm(a);`
+- `double im = a->im;`
+- `double im = 0; complexIm(a, im);`
+
+---
+
+Consider the following two approaches for implementing the **ADT Stack** using an *array list*:
 
 ![](stack_arraylist.png)
 
 Which one would you choose for better eficiency?
 
-    - !Approach **A**
-    - Approach **B**
+- !Approach **A**
+- Approach **B**
 
 # DummyCategory/Math
 
-* Is the problem
+Is the problem
 
 $$
 \begin{array}{ll}
@@ -123,32 +145,36 @@ s.t. & 3 x_1 + 8 x_2 \leq 9\\
 \end{array}
 $$
 
-a linear optimization problem ?
-    - yes
-    - !no
+a linear optimization problem?
 
-* What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
-    - $x = (\frac{8}{3},0)$
-    - $x = (\frac{4}{3},1)$
-    - !$x(\frac{8}{5}, \frac{4}{5})$
+- yes
+- !no
+
+---
+
+What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
+
+- $x = (\frac{8}{3},0)$
+- $x = (\frac{4}{3},1)$
+- !$x(\frac{8}{5}, \frac{4}{5})$
 
 ~~~
 
 * Categories are specified via *markdown sections*. Note the use of `/` to specify subcategories (you can further create a subcategory of a subcategory).
 
-* Questions start with `*` will include all content until the first answer;
+* Questions start with `---`. Will include all content afterwards until the first answer;
 
 * Answers start with `-`; correct answers must have the prefix `!`;
 
 * Text allows any markdown formatting, e.g., **bold** and *italic*;
 
-* Images are included normally, as in any markdown file, even by an external *url*.
+* Images are included normally (as well as links) even by an external *url*.
 
 * Code blocks are included using *backticks* followed by the *lexer*, as in any markdown file. If using `{img}` after the lexer, then the code will be converted to a *png* image with syntax highlighting; personally, I prefer this method. Otherwise, it will be exported in plain text.
 
-All images are encoded to *base64* and included in the output, so the resulting XML is self-contained and ready to import into *Moodle*.
+* All images are encoded to *base64* and included in the output, so the resulting XML is self-contained and ready to import into *Moodle*.
 
-**Important note (1):** Pay particular atention to use spaces after section, question or answers delimiters, e.g., `#`, `*` and `-`.
+**Important note (1):** Pay particular atention to use spaces after section, question or answers delimiters, e.g., `#`, `---` and `-`.
 
 **Important note (2):** Regular line breaks in markdown are not converted automatically to line breaks in the output. You must **place two spaces** for this to happen. This is a *markdown* standard, e.g.,
 
@@ -199,18 +225,15 @@ This will produce the corresponding *Moodle XML* files, one per each category or
 The script includes some *configurations* that can be manually modified, namely:
 
 ```python
-CONFIG = {
-    # Produce debugging information while parsing
-    'debug' : False,
-    
+{   
     # Place table borders through css style?
     'table_border' : True,
 
     # quiz answer numbering | allowed values: 'none', 'abc', 'ABCD' or '123'
     'answer_numbering' : 'abc', 
 
-    # quiz shuffle answers | 1 -> true ; 0 -> false
-    'shuffle_answers' : '1',
+    # quiz shuffle answers 
+    'shuffle_answers' : True,
 
     # in single answer questions, the penalty to apply to a wrong answer in % [0,1]
     'single_answer_penalty_weight' : 0, #e.g., 0.25 = 25% 
@@ -221,7 +244,7 @@ CONFIG = {
 
     # pygments code snapshot | additional dump to disk of generated images
     'pygments.dump_image' : False,
-    'pygments.dump_image_id' : 1, #e,g, 1.png and incremented for each image
+    'pygments.dump_image_id' : 1, #e.g., 1.png and incremented for each image
 }
 ```
 
