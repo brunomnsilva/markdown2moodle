@@ -107,8 +107,9 @@ class Configuration(dict):
 
 NEW_LINE = '\n'
 HEADER_PATTERN = re.compile(r'^\s*# (.*)$')
-# QUESTION_PATTERN = re.compile(r'^(\s*)\*(\s)(.*)$')
-QUESTION_PATTERN = re.compile(r'^-{3,}\s*$')
+# A question starts with "---" followed by, optionally, any content.
+# However, we have to deal with a quirk of tables, e.g., "---|---" - these will not match!
+QUESTION_PATTERN = re.compile(r'^-{3,}\s*([^|]*)$')
 CORRECT_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)!(.*)$')
 WRONG_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)(.*)$')
 FEEDBACK_PATTERN = re.compile(r'^(\s*)>(.*)$')
@@ -191,8 +192,10 @@ def get_header(string):
 def get_question(string):
     match = re.match(QUESTION_PATTERN, string)
     if match:
-        #return match.group(3)
-        return ""
+        # Quirk: we allow content right after "---" 
+        content = match.group(1)
+        return content if content else ""
+
     return None
 
 def get_correct_answer(string):
@@ -474,11 +477,13 @@ class MarkdownParser(StateMachine):
             # do nothing
             state = "parse_header"
         elif is_question(line_text):
-            quiz.start_question()
+            quiz.consume_question(line_text)
             state = "parse_question"
         elif is_answer(line_text) or is_feedback(line_text) or is_eof(line_text):
             raise TransitionError("Expecting a question")
         else:
+            # After a header, any content will be treated as the beggining of a new question
+            # "---" is not required
             quiz.start_question()
             quiz.append_to_question(line_text)
             state = "parse_question"
@@ -538,7 +543,7 @@ class MarkdownParser(StateMachine):
             state = "parse_feedback"
         elif is_question(line_text):
             if quiz.current_question_has_correct_answers():
-                quiz.start_question()
+                quiz.consume_question(line_text)
                 state = "parse_question"
             else:
                 raise TransitionError("Expecting at least one correct answer in previous question")
@@ -570,7 +575,7 @@ class MarkdownParser(StateMachine):
             state = "parse_answer"
         elif is_question(line_text):
             if quiz.current_question_has_correct_answers():
-                quiz.start_question()
+                quiz.consume_question(line_text)
                 state = "parse_question"
             else:
                 raise TransitionError("Expecting at least one correct answer in previous question")
