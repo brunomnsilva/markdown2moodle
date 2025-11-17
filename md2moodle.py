@@ -143,7 +143,7 @@ MOODLE_EMOTICONS = [
 ]
 
 # Compile one combined regex to detect any emoticon
-_EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
+EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
 
 ##
 # Regex helpers
@@ -796,7 +796,7 @@ class XMLExporter(QuizExporter):
         if not text:
             return text
 
-        matches = list(_EMOTICON_PATTERN.finditer(text))
+        matches = list(EMOTICON_PATTERN.finditer(text))
         if not matches:
             return text
 
