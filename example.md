@@ -1,168 +1,212 @@
 # DummyCategory
 
-* Whats the truthfulness of the following statement: *"We can achieve a time complexity of $O(1)$ for a sequential search in an array"*.
-    - True
-    - !False
+Whats the truthfulness of the following statement: *"We can achieve a time complexity of $O(1)$ for a sequential search in an array"*.
 
-* Consider the following function:
+- True
+- !False
 
-    ```cpp{img}
-    int func(int *arr, int arrSize) {
-        int val = 0;
-        for(int i=0; i<arrSize; i++) {
-            for(int j=0; j<2; j++) {
-                val += arr[i];
-            }
+---
+
+Consider the following function:
+
+```cpp{img}
+int func(int *arr, int arrSize) {
+    int val = 0;
+    for(int i=0; i<arrSize; i++) {
+        for(int j=0; j<2; j++) {
+            val += arr[i];
         }
-        return val;
     }
-    ```
+    return val;
+}
+```
 
-    What's its time complexity?
-    - $O(1)$
-    - !$O(n)$
-    - $O(log\;n)$
-    - $O(n^2)$
+What's its time complexity?
+- $O(1)$
+- !$O(n)$
+- $O(log\;n)$
+- $O(n^2)$
 
-* Consider the following function:
+---
 
-    $$
-    fib(n) = \left\{\begin{matrix}
-    1 & n = 0\\ 
-    1 & n = 1\\ 
-    fib(n-1) + fib(n-2) & n > 1 
-    \end{matrix}\right.
-    $$
+Consider the following function:
 
-    Mark the correct statements about `fib(n)`:
+$$
+fib(n) = \left\{\begin{matrix}
+1 & n = 0\\ 
+1 & n = 1\\ 
+fib(n-1) + fib(n-2) & n > 1 
+\end{matrix}\right.
+$$
 
-    - !It's a recursive function
+Mark the correct statements about `fib(n)`:
 
-    - It's defined for all integers
-
-    - It has $O(n)$ time complexity
-
-    - !It has $O(2^n)$ time complexity
+- !It's a recursive function
+- It's defined for all integers
+- It has $O(n)$ time complexity
+- !It has $O(2^n)$ time complexity
 
 # DummyCategory/Programming/ADT
 
-* What's the *access policy* of the ADT Queue?
-    - !FIFO
-        > Yes, *first-in-first-out* in correct!
-    - LIFO
-        > No, *last-in-first-out* pertains to the ADT Stack.
-    - *Rank*-based
-        > No, this would be for the ADT List.
-    - *Key*-based
-        > No, this would be for the ADT Map.
+What's the *access policy* of the ADT Queue?
 
-* Consider the following code that uses the ADT Stack:
+- !FIFO
+    > Yes, *first-in-first-out* in correct!
+- LIFO
+    > No, *last-in-first-out* pertains to the ADT Stack.
+- *Rank*-based
+    > No, this would be for the ADT List.
+- *Key*-based
+    > No, this would be for the ADT Map.
 
-    ```cpp
-    PtStack s1 = stackCreate(10);
-    PtStack s2 = stackCreate(10);
-    for(int i=0; i<4; i++) {
-        stackPush(s1, (i+1) );
+---
+
+Consider the following code that uses the ADT Stack:
+
+```cpp
+PtStack s1 = stackCreate(10);
+PtStack s2 = stackCreate(10);
+for(int i=0; i<4; i++) {
+    stackPush(s1, (i+1) );
+}
+int elem1, elem2;
+while(!stackIsEmpty(s1)) {
+    stackPop(s1, &elem1);
+    if(!stackIsEmpty(s2)) {
+        stackPop(s2, &elem2);
+        stackPush(s2, (elem1 + elem2) );
+    } else {
+        stackPush(s2, elem1);
     }
-    int elem1, elem2;
-    while(!stackIsEmpty(s1)) {
-        stackPop(s1, &elem1);
-        if(!stackIsEmpty(s2)) {
-            stackPop(s2, &elem2);
-            stackPush(s2, (elem1 + elem2) );
-        } else {
-            stackPush(s2, elem1);
-        }
-    }
-    //s1 = ? s2 = ?
-    ```
+}
+//s1 = ? s2 = ?
+```
 
-    What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the second loop?
-    - !`s1 = {} e s2 = {10}`
-    - `s1 = {1,2,3,4} e s2 = {4,7,9,10}`
-    - `s1 = {} e s2 = {6}`
-    - Other answer
+What's the contents of the stacks `s1` e `s2` (from **bottom to top**) after the second loop?
 
-* Consider the parcial specification of the ADT Complex:
+- !`s1 = {} e s2 = {10}`
+- `s1 = {1,2,3,4} e s2 = {4,7,9,10}`
+- `s1 = {} e s2 = {6}`
+- Other answer
 
-    ```cpp{img}
-    #define COMPLEX_OK      0
-    #define COMPLEX_NULL    1
+---
 
-    /**
-    * @brief Retrieve the imaginary part of the complex number.
-    *
-    * @param c [in] PtComplex pointer to the number's data structure.
-    * @param im [out] Address of variable to hold result
-    *
-    * @return COMPLEX_OK and imaginary part assigned to '*im'
-    * @return COMPLEX_NULL if 'c' is NULL
-    */
-    int complexIm (PtComplex c, double *im);
-    ```
+Consider the parcial specification of the ADT Complex:
 
-    And the following code:  
+```cpp{img}
+#define COMPLEX_OK      0
+#define COMPLEX_NULL    1
 
-    ```cpp{img}
-    PtComplex a = complexCreate(1, 8);
-    ```
+/**
+* @brief Retrieve the imaginary part of the complex number.
+*
+* @param c [in] PtComplex pointer to the number's data structure.
+* @param im [out] Address of variable to hold result
+*
+* @return COMPLEX_OK and imaginary part assigned to '*im'
+* @return COMPLEX_NULL if 'c' is NULL
+*/
+int complexIm (PtComplex c, double *im);
+```
 
-    How to get the imaginary component of the complex number `a`?
+And the following code:  
 
-    - !`double im = 0; complexIm(a, &im);`
-    - `int im = complexIm(a);`
-    - `double im = a->im;`
-    - `double im = 0; complexIm(a, im);`
+```cpp{img}
+PtComplex a = complexCreate(1, 8);
+```
 
-* Consider the following two approaches for implementing the **ADT Stack** using an *array list*:
+How to get the imaginary component of the complex number `a`?
 
-    ![](stack_arraylist.png)
+- !`double im = 0; complexIm(a, &im);`
+- `int im = complexIm(a);`
+- `double im = a->im;`
+- `double im = 0; complexIm(a, im);`
 
-    Which one would you choose for better eficiency?
+---
 
-    - !Approach **A**
-    - Approach **B**
+Consider the following two approaches for implementing the **ADT Stack** using an *array list*:
+
+![](stack_arraylist.png)
+
+Which one would you choose for better eficiency?
+
+- !Approach **A**
+- Approach **B**
 
 # DummyCategory/Math
 
-* Is the problem:
+Is the problem:
 
-    $$
-    \begin{array}{ll}
-    \max & 8x_1 + 3 x_2\\ 
-    s.t. & 3 x_1 + 8 x_2 \leq 9\\
-    & x_1 \times x_2 \leq 20\\
-    & x \geq 0
-    \end{array}
-    $$
+$$
+\begin{array}{ll}
+\max & 8x_1 + 3 x_2\\ 
+s.t. & 3 x_1 + 8 x_2 \leq 9\\
+& x_1 \times x_2 \leq 20\\
+& x \geq 0
+\end{array}
+$$
 
-    a linear optimization problem ?
-    - yes
-    - !no
+a linear optimization problem ?
+- yes
+- !no
 
-* What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
+---
 
-    - $x = (\frac{8}{3},0)$
-    - $x = (\frac{4}{3},1)$
-    - !$x(\frac{8}{5}, \frac{4}{5})$
+What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x_2 \leq 4$ with equality?
+
+- $x = (\frac{8}{3},0)$
+- $x = (\frac{4}{3},1)$
+- !$x(\frac{8}{5}, \frac{4}{5})$
 
 # DummyCategory/Tables
 
-* Consider the following *Dijkstra* distance table, starting at *vertex* `A`:
+Consider the following *Dijkstra* distance table, starting at *vertex* `A`:
 
-    [[[
-    Vertex | Distance | Path
-    -------|----------|---------
-    A      | 0        | $\emptyset$
-    B      | 3        | D
-    C      | 7        | E
-    D      | 1        | A
-    E      | 2        | D
-    ]]]
+<!-- 
+    Tables must be inserted inside a custom [[[ ]]] block. 
+-->
 
-    What's the minimum cost path between `A` and `E`?
+[[[
+Vertex | Distance | Path
+-------|----------|---------
+A      | 0        | $\emptyset$
+B      | 3        | D
+C      | 7        | E
+D      | 1        | A
+E      | 2        | D
+]]]
 
-    - A, B, C
-    - !A, D, E, C
-    - A, B, D, E, C
-    - No path exists
+
+What's the minimum cost path between `A` and `E`?
+
+- A, B, C
+- !A, D, E, C
+- A, B, D, E, C
+- No path exists
+
+# DummyCategory/MarkdownFormatting
+
+<!-- Comments will be striped from the output, so it is safe to comment your quiz files -->
+
+## Lists (titles must be level 2 or higher)
+
+Because level 1 headings are reserved for question categories.
+
+1. Numbered item;
+2. Another numbered item;
+
+<br/> <!-- Must include a break to force list separation. Quirk of python-markdown -->
+
+* Unordered list item
+* Another unordered list item
+    * Nested item
+
+
+A ficticious [link](https://example.com/image.png).
+
+Horizontal rules must be preceeded by whitespace, otherwise the parser assumes a new question is starting.
+
+  ---
+
+- !Correct answer
+- Incorrect answer
