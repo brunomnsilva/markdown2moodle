@@ -145,6 +145,9 @@ MOODLE_EMOTICONS = [
 # Compile one combined regex to detect any emoticon
 EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
 
+# HTML comments (to strip from output)
+HTML_COMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
+
 ##
 # Regex helpers
 
@@ -816,6 +819,13 @@ class XMLExporter(QuizExporter):
             offset += len(sanitized) - len(original)
 
         return result
+    
+    def _remove_html_comments(self, text: str) -> str:
+        """
+        Removes all HTML comments from the given text.
+        """
+        return HTML_COMMENT.sub('', text)
+
 
     def _render_answer(self, text):
         """Replaces any allowed contents, e.g., text, inline code and formulas
@@ -840,6 +850,8 @@ class XMLExporter(QuizExporter):
         text = re.sub(TABLE_PATTERN, self._replace_table, text)
 
         text = self._sanitize_moodle_emoticons(text)
+
+        text = self._remove_html_comments(text)
 
         text = self._wrap_cdata( self._markdown_custom(text) )
         return text
