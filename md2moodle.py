@@ -424,10 +424,14 @@ class MarkdownParser(StateMachine):
         # Save source filename in quiz
         self.quiz.source = md_file_name
 
+        # Fail early with a clear message if the markdown file does not exist.
+        # FileNotFoundError is not caught here; it bubbles up to __main__.
+        if not os.path.isfile(md_file_name):
+            raise FileNotFoundError(f"Markdown file not found: {md_file_name}")
+
         # Set start state 
         self.set_start("start")
 
-        md_script = None
         with open(md_file_name, "r") as md_file:
             md_script = md_file.read()
 
@@ -1045,6 +1049,8 @@ if __name__ == '__main__':
         exporter.export("./out/")
 
     except Exception as e:
+        # Concise message for end users.
         print(f"Exception: {e}")
-        traceback.print_exc()
+        # Uncomment the next line during development for a full traceback:
+        # traceback.print_exc()
     
