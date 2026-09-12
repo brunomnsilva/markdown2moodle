@@ -517,8 +517,7 @@ class MarkdownParser(StateMachine):
             raise TransitionError("Expecting text, codeblock or answer")
         else:
             quiz.append_to_question(line_text)
-            state  = "parse_question"
-            pass
+            state  = "parse_question"            
 
         return state
 
@@ -657,13 +656,11 @@ class XMLExporter(QuizExporter):
 
             for section_caption in self.quiz:
                 section = self.quiz[section_caption]
-                xml_file = open(self._create_output_filename(md_file_name, section_caption, output_path), 'w')
-                # xml_file.write(section_to_xml(section, md_dir_path))
+                xml_file = open(self._create_output_filename(self.quiz.source, section_caption, output_path), 'w')
+
                 # Prettify xml
                 tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section, md_dir_path))
                 xml_file.write(tmp.toprettyxml())
-
-                # xml_file.write(section_to_xml(section_caption, section, md_dir_path))
 
         else:
             logging.error("Quiz is not marked as valid for export.")
