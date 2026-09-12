@@ -651,19 +651,16 @@ class XMLExporter(QuizExporter):
     
     def _export_xml_to_file(self, output_path):
         """Produces the XML file outputs; one for each specified category in the md file."""
-        if self.quiz.is_valid:            
-            md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
+      
+        md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
 
-            for section_caption in self.quiz:
-                section = self.quiz[section_caption]
-                xml_file = open(self._create_output_filename(self.quiz.source, section_caption, output_path), 'w')
+        for section_caption in self.quiz:
+            section = self.quiz[section_caption]
+            xml_file = open(self._create_output_filename(self.quiz.source, section_caption, output_path), 'w')
 
-                # Prettify xml
-                tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section, md_dir_path))
-                xml_file.write(tmp.toprettyxml())
-
-        else:
-            logging.error("Quiz is not marked as valid for export.")
+            # Prettify xml
+            tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section, md_dir_path))
+            xml_file.write(tmp.toprettyxml())
 
     def _export_xml_to_string(self, md_file_name):
         """Produces the XML output and returns the resulting text."""
