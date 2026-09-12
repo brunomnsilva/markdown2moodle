@@ -188,21 +188,42 @@ Next paragraph.
 
 ## How to Use
 
-### Prerequistes
+### Prerequisites
 
-This is a *python* script, so obviously you'll need `python` installed.
+This is a *python* script, so you'll need `python3` installed.
 
-You'll also need the following python libraries installed:
+You'll also need the following python libraries:
 
-* **markdown** (mandatory) 
+* **markdown** (mandatory) — used to render markdown to HTML.
 
-    - `$> pip install markdown --user`
+* **pygments** (optional, only used to generate images from code blocks) — which uses **PIL** \[python imaging library\].
 
-* **pygments** (optional, only used to generate images from code blocks)
+Install them either with `pip`:
 
-    - `$> pip install pygments --user`
+```bash
+$> pip install markdown --user        # mandatory
+$> pip install pygments --user        # optional, for code block images
+```
 
-    - which uses **PIL** \[python imaging library\] - check your package manager (e.g., in Debian its `pillow` package)
+or, preferably, using your distribution's packages, e.g.:
+
+* Debian/Ubuntu:
+
+    ```bash
+    $> sudo apt install python3-markdown python3-pygments python3-pil
+    ```
+
+* Fedora:
+
+    ```bash
+    $> sudo dnf install python3-markdown python3-pygments python3-pillow
+    ```
+
+* Arch Linux:
+
+    ```bash
+    $> sudo pacman -S python-markdown python-pygments python-pillow
+    ```
 
 If other packages are required in your system, you should be able to discern which ones from the error output.
 
