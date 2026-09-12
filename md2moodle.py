@@ -954,8 +954,6 @@ class XMLExporter(QuizExporter):
         from pygments.lexers import ClassNotFound
         import tempfile
 
-        if not lexer_name:
-            lexer_name = 'pascal'
         try:
             lexer = get_lexer_by_name(lexer_name)
         except ClassNotFound:
