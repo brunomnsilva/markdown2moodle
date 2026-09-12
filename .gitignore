@@ -2,7 +2,12 @@
 
 *.xml
 
+# Ignore VS Code IDE configuration
 .vscode/
 
+# Ignore compiled and generated files
 __pycache__/
 out/
+
+# Ignore working notes
+TODO.md
