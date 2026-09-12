@@ -630,6 +630,12 @@ class QuizExporter(ABC):
     def export(self, output_path="."):
         pass
 
+    def _remove_html_comments(self, text: str) -> str:
+        """
+        Removes all HTML comments from the given text.
+        """
+        return HTML_COMMENT.sub('', text)
+
 
 # class QuizExporterDOCX(QuizExporter):
 #     def __init__(self, quiz, config):
@@ -828,13 +834,6 @@ class XMLExporter(QuizExporter):
 
         return result
     
-    def _remove_html_comments(self, text: str) -> str:
-        """
-        Removes all HTML comments from the given text.
-        """
-        return HTML_COMMENT.sub('', text)
-
-
     def _render_answer(self, text):
         """Replaces any allowed contents, e.g., text, inline code and formulas
         and returns the CDATA content."""
