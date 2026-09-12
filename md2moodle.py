@@ -668,20 +668,6 @@ class XMLExporter(QuizExporter):
             tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section, md_dir_path))
             xml_file.write(tmp.toprettyxml())
 
-    def _export_xml_to_string(self, md_file_name):
-        """Produces the XML output and returns the resulting text."""
-        if self.is_valid:
-            md_dir_path = os.getcwd()
-            result = {}            
-            for section_caption in self:
-                section = self[section_caption]
-                result[section_caption] = self._section_to_xml(section_caption, section, md_dir_path)
-            return json.dumps(result, indent=2)
-        else:
-            logging.error("Quiz is not marked as valid for export.")
-            return ""
-        
-
     def _create_output_filename(self, md_file_name, section_caption, output_path=None):
         """Generates and sanitizes .xml output filename.
 
