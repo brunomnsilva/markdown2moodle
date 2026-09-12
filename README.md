@@ -262,6 +262,9 @@ The script includes some *configurations* that can be manually modified, namely:
     'single_answer_penalty_weight' : 0, #e.g., 0.25 = 25% 
 
     # pygments code snapshot generator
+    # Font used to render code-block images. Empty uses Pygments' platform
+    # default (DejaVu Sans Mono on Linux); may be a font name or a .ttf path.
+    'pygments.font_name' : '',
     'pygments.font_size' : 16,
     'pygments.line_numbers' : False,
 
@@ -269,6 +272,29 @@ The script includes some *configurations* that can be manually modified, namely:
     'pygments.dump_image' : False,
     'pygments.dump_image_id' : 1, #e.g., 1.png and incremented for each image
 }
+```
+
+#### Code block images and fonts
+
+Code blocks marked with `{img}` are rendered to a PNG using a monospace font.
+By default, Pygments uses **DejaVu Sans Mono** on Linux. If that font is not
+installed, the script fails with an error such as:
+
+```markdown
+FontNotFound: No usable fonts named: "DejaVu Sans Mono"
+```
+
+To fix this, either install the default font on your system, e.g.:
+
+* Debian/Ubuntu: `$> sudo apt install fonts-dejavu`
+* Fedora: `$> sudo dnf install dejavu-sans-mono-fonts`
+* Arch Linux: `$> sudo pacman -S ttf-dejavu`
+
+or set `'pygments.font_name'` to any installed monospace font (or to the path
+of a `.ttf` file), e.g.:
+
+```python
+'pygments.font_name' : 'Noto Sans Mono',
 ```
 
 ## Contribute

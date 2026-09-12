@@ -75,6 +75,10 @@ class Configuration(dict):
             # in single answer questions, the penalty weight for wrong answer [0, 1] -
             'single_answer_penalty_weight': 0,  # e.g., 0.25 means -25% penalty 
             # pygments code snapshot generator
+            # Font used to render code-block images. An empty string uses
+            # Pygments' platform default (DejaVu Sans Mono on Linux). If the
+            # font is not installed, export fails with a FontNotFound error.
+            'pygments.font_name': '',
             'pygments.font_size': 16,
             'pygments.line_numbers': False,
             # pygments code snapshot | additional dump to disk of generated images
@@ -975,7 +979,8 @@ class XMLExporter(QuizExporter):
             lexer = get_lexer_by_name('console')
 
         imgBytes = highlight(code, lexer,\
-                            ImageFormatter(font_size = self.config['pygments.font_size'],\
+                            ImageFormatter(font_name = self.config['pygments.font_name'],\
+                                font_size = self.config['pygments.font_size'],\
                                 line_numbers = self.config['pygments.line_numbers']))
 
         if self.config['pygments.dump_image']:
@@ -1022,9 +1027,10 @@ if __name__ == '__main__':
     try:
         # Create config instance and change default values, if needed
         config = Configuration({
-            #"pygments.font_size": 16,
-            #"shuffle_answers" : False,
-            #'table_border': True,
+            #'pygments.font_size' : 14,
+            #'pygments.font_name' : 'JetBrainsMono Nerd Font'
+            #'shuffle_answers' : False,
+            #'table_border' : True,             
         })
 
         # Create the quiz instance with configuration
