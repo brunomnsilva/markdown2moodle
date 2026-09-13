@@ -1010,7 +1010,7 @@ if __name__ == '__main__':
         # Create config instance and change default values, if needed
         config = Configuration({
             #'pygments.font_size' : 14,
-            'pygments.font_name' : 'JetBrainsMono Nerd Font'
+            #'pygments.font_name' : 'JetBrainsMono Nerd Font'
             #'shuffle_answers' : False,
             #'table_border' : True,             
         })
