@@ -957,6 +957,7 @@ class XMLExporter(QuizExporter):
         try:
             lexer = get_lexer_by_name(lexer_name)
         except ClassNotFound:
+            logging.warning(f"Lexer '{lexer_name}' is not valid in pygments. Using default 'console'.")
             lexer = get_lexer_by_name('console')
 
         imgBytes = highlight(code, lexer,\
@@ -1000,7 +1001,7 @@ if __name__ == '__main__':
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.INFO # INFO, DEBUG 
+        level=logging.INFO # INFO, WARNING, DEBUG 
     )
 
     md_file_name = sys.argv[1]
@@ -1009,7 +1010,7 @@ if __name__ == '__main__':
         # Create config instance and change default values, if needed
         config = Configuration({
             #'pygments.font_size' : 14,
-            #'pygments.font_name' : 'JetBrainsMono Nerd Font'
+            'pygments.font_name' : 'JetBrainsMono Nerd Font'
             #'shuffle_answers' : False,
             #'table_border' : True,             
         })
