@@ -133,6 +133,7 @@ SINGLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$(.+?)\$')
 # Without question mark, you have one replacement from the first to the last $$.
 DOUBLE_DOLLAR_LATEX_PATTERN = re.compile(r'\$\$(.+?)\$\$', re.DOTALL)
 BLOCKCODE_PATTERN = re.compile(r'^(\s*)```(.*)$')
+NAME_PATTERN = re.compile(r'<!--\s*name:\s*(.+?)\s*-->', re.IGNORECASE)
 
 TABLE_PATTERN = re.compile(r'\[\[\[(.*)\n([\s\S]+?)\]\]\]', re.MULTILINE)
 
@@ -221,6 +222,12 @@ def get_answer_feedback(string):
         return match.group(2)
     return None
 
+def get_question_name(text):
+    """ Extracts an explicit question name, if defined via a comment <!-- name: ... -->."""
+    match = NAME_PATTERN.search(text)
+    if match:
+        return match.group(1).strip()
+    return None
 
 ######################################################################
 # Section 2 - Quiz class
@@ -719,23 +726,30 @@ class XMLExporter(QuizExporter):
         """
         Converts a parsed question to XML.
 
-        <name> is automatically generated from a hash (question text + rand)
+        <name> uses the content of '<!-- name: ... -->' when present in the Markdown;
+        otherwise, maintains the current default, 
+        which is automatically generated from a hash (question text + rand)
+
         <single> is derived from correct answers (1/0)
         <questiontext> is encoded in CDATA and html format
         """
 
-        #convert question text to CDATA html
         rendered_question_text = self._render_question(question['text'], md_dir_path)
 
-        index_part = str(index + 1).rjust(4, '0')
-        q_part = (question['text'] + str(random.random())).encode('utf-8')
+        explicit_name = get_question_name(question['text'])
+
+        if explicit_name:
+            question_name = self._sanitize_entities(explicit_name)
+        else:
+            index_part = str(index + 1).rjust(4, '0')
+            q_part = (question['text'] + str(random.random())).encode('utf-8')
+            question_name = index_part + hashlib.md5(q_part).hexdigest()
+
         question_single_status = ('true' if question['single'] else 'false')
-        
+
         xml = '<question type="multichoice">'
         # question name
-        xml += '<name><text>'
-        xml += index_part + hashlib.md5(q_part).hexdigest()
-        xml += '</text></name>'
+        xml += '<name><text>' + question_name + '</text></name>'
         # question text
         xml += '<questiontext format="html"><text>'
         xml += rendered_question_text
@@ -751,6 +765,7 @@ class XMLExporter(QuizExporter):
         xml += '<single>' + question_single_status + '</single>'
         xml += '<answernumbering>' + self.config['answer_numbering'] + '</answernumbering>'
         xml += '</question>'
+
         return xml
 
 
