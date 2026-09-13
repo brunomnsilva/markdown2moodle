@@ -20,6 +20,8 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
     * We can include html comments `<!-- -->` that will be striped out from the output.
 
+    * We can define the name of a question with special comment `<!-- name: question name -->`.
+
     * Some Moodle instances can have an *emoticon parser* activated, that will, for example, change `(n)`, e.g., in `fib(n)`, into `fib👎`. All *emoticons*  are dealt properly - inserting zero-width spacing to fool the Moodle parser. If you still wish to include *emojis*, just put the unicode character in the source file. 
 
     * Generated output files are placed in a local `out` directory.

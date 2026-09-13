@@ -48,6 +48,8 @@ Mark the correct statements about `fib(n)`:
 
 # DummyCategory/Programming/ADT
 
+<!-- name: Access Policy Question -->
+
 What's the *access policy* of the ADT Queue?
 
 - !FIFO
@@ -159,6 +161,8 @@ What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x
 - !$x(\frac{8}{5}, \frac{4}{5})$
 
 # DummyCategory/Tables
+
+<!-- name: Minimum Cost Path Question -->
 
 Consider the following *Dijkstra* distance table, starting at *vertex* `A`:
 
