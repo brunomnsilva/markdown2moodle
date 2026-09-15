@@ -210,3 +210,30 @@ Horizontal rules must be preceeded by whitespace, otherwise the parser assumes a
 
 - !Correct answer
 - Incorrect answer
+
+# DummyCategory/HTML
+
+<!-- This prose comment is stripped from the output, but comments inside code are kept. -->
+
+Consider the following HTML snippet:
+
+```html
+<!-- A comment inside a code block is preserved -->
+<p>Hello, world!</p>
+```
+
+What does the browser render?
+
+- !`Hello, world!`
+- `<!-- A comment inside a code block is preserved -->`
+- `Hello, world!` followed by the comment text
+- Nothing
+
+---
+
+Which of the following is a valid HTML comment?
+
+- !`<!-- This is a comment -->`
+- `<!--- This is a comment --->`
+- `// This is a comment`
+- `# This is a comment`

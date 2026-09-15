@@ -154,6 +154,14 @@ EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
 # HTML comments (to strip from output)
 HTML_COMMENT = re.compile(r'<!--[\s\S]*?-->', re.MULTILINE)
 
+# Matches fenced code blocks, inline code and HTML comments, in that order, so
+# that comments inside code are never treated as comments.
+CODE_OR_COMMENT_PATTERN = re.compile(
+    MULTI_LINE_CODE_PATTERN.pattern
+    + '|' + SINGLE_LINE_CODE_PATTERN.pattern
+    + '|(?P<comment>' + HTML_COMMENT.pattern + ')',
+    re.MULTILINE)
+
 ##
 # Regex helpers
 
@@ -632,9 +640,11 @@ class QuizExporter(ABC):
 
     def _remove_html_comments(self, text: str) -> str:
         """
-        Removes all HTML comments from the given text.
+        Removes HTML comments, except those inside inline code spans or
+        fenced code blocks (e.g. an HTML question demonstrating comments).
         """
-        return HTML_COMMENT.sub('', text)
+        return CODE_OR_COMMENT_PATTERN.sub(
+            lambda m: '' if m.lastgroup == 'comment' else m.group(0), text)
 
 
 # class QuizExporterDOCX(QuizExporter):
@@ -823,6 +833,8 @@ class XMLExporter(QuizExporter):
     def _render_answer(self, text):
         """Replaces any allowed contents, e.g., text, inline code and formulas
         and returns the CDATA content."""
+
+        text = self._remove_html_comments(text)
 
         text = re.sub(SINGLE_LINE_CODE_PATTERN, self._replace_single_line_code, text)
         text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, self._replace_latex, text)

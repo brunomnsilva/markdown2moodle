@@ -18,7 +18,7 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
     * The new quiz format now requires starting a question with `---` (with optional content following it). This allows for more complex content, including *bullet lists* without any "hacks" (e.g., use of `+` for unordered lists).
 
-    * We can include html comments `<!-- -->` that will be striped out from the output.
+    * We can include html comments `<!-- -->` that will be stripped out from the output. Comments inside code (inline code or fenced code blocks) are preserved, e.g. when authoring an HTML question.
 
     * Some Moodle instances can have an *emoticon parser* activated, that will, for example, change `(n)`, e.g., in `fib(n)`, into `fib👎`. All *emoticons*  are dealt properly - inserting zero-width spacing to fool the Moodle parser. If you still wish to include *emojis*, just put the unicode character in the source file. 
 
