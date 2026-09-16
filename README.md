@@ -303,12 +303,6 @@ of a `.ttf` file), e.g.:
 
 You're very welcome to contribute to this project, either via *issues* or **pull request**.
 
-### List of contributors
-
-- [brunomnsilva](https://github.com/brunomnsilva)
-
-- [mathieuLacroix](https://github.com/mathieuLacroix)
-
 ### Technical aspects
 
 The *markdown* parser is implemented using a *finite state machine* (FSM) implementation. This allows for a more robust parsing and error reporting.
