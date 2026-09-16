@@ -184,22 +184,21 @@ What's the minimum cost path between `A` and `E`?
 - A, B, D, E, C
 - No path exists
 
-# Tables with images
+---
 
-* Between the following shapes:
+Between the following shapes:
 
 [[[
-circle          | triangle          |
+Circle          | Triangle          |
 :--------------:|:-----------------:|
 ![](circle.png) | ![](triangle.png) |
 ]]]
 
 which one do you prefer?
 
-- ! circle
-- triangle
-- none
-
+- !Circle
+- Triangle
+- None
 
 # DummyCategory/MarkdownFormatting
 
