@@ -18,7 +18,7 @@ I'm currently using this script to produce Moodle quizes for *computer science* 
 
     * The new quiz format now requires starting a question with `---` (with optional content following it). This allows for more complex content, including *bullet lists* without any "hacks" (e.g., use of `+` for unordered lists).
 
-    * We can include html comments `<!-- -->` that will be stripped out from the output. Comments inside code (inline code or fenced code blocks) are preserved, e.g. when authoring an HTML question.
+    * We can include html comments `<!-- -->` that will be stripped out from the output. Content inside code patterns (inline code or fenced code blocks) is left untouched: comments are preserved and image references are kept as literal text instead of being embedded, e.g. when authoring an HTML question or documenting markdown syntax.
 
     * Some Moodle instances can have an *emoticon parser* activated, that will, for example, change `(n)`, e.g., in `fib(n)`, into `fib👎`. All *emoticons*  are dealt properly - inserting zero-width spacing to fool the Moodle parser. If you still wish to include *emojis*, just put the unicode character in the source file. 
 
@@ -166,13 +166,15 @@ What is the point satisfying the inequalities $3x_1 + 4x_2 \leq 8$ and $x_1 + 3x
 
 * Categories are specified via *markdown sections*. Note the use of `/` to specify subcategories (you can further create a subcategory of a subcategory).
 
-* Questions start with `---`. Will include all content afterwards until the first answer;
+* Questions start with `---` (with no leading space). Will include all content afterwards until the first answer;
 
 * Answers start with `-`; correct answers must have the prefix `!`;
 
 * Text allows any markdown formatting, e.g., **bold** and *italic*;
 
 * Images are included normally (as well as links) even by an external *url*.
+
+* Image references placed inside *inline code* or *fenced code blocks* are **not** embedded; they remain literal text. Likewise, HTML comments inside code are preserved rather than stripped.
 
 * Code blocks are included using *backticks* followed by the *lexer*, as in any markdown file. If using `{img}` after the lexer, then the code will be converted to a *png* image with syntax highlighting; personally, I prefer this method. Otherwise, it will be exported in plain text.
 

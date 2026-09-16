@@ -118,7 +118,7 @@ WRONG_ANSWER_PATTERN = re.compile(r'^(\s*)-(\s)(.*)$')
 FEEDBACK_PATTERN = re.compile(r'^(\s*)>(.*)$')
 SWITCH_PRE_TAG_PATTERN = re.compile(r'^```.*$')
 EMPTY_LINE_PATTERN = re.compile(r'^\s*$')
-IMAGE_PATTERN = re.compile(r'!\[[^]]*\]\(([^)]+)\)')
+IMAGE_PATTERN = re.compile(r'!\[[^]]*\]\((?P<url>(?:[^()]|\([^()]*\))+)\)')
 MULTI_LINE_CODE_PATTERN = re.compile(r'```(.*)\n([\s\S]+?)```', re.MULTILINE)
 SINGLE_LINE_CODE_PATTERN = re.compile(r'`([^`]+)`')
 # question mark in the regex implies that it is not greedy
@@ -153,12 +153,22 @@ EMOTICON_PATTERN = re.compile('|'.join(MOODLE_EMOTICONS))
 # HTML comments (to strip from output)
 HTML_COMMENT = re.compile(r'<!--[\s\S]*?-->', re.MULTILINE)
 
-# Matches fenced code blocks, inline code and HTML comments, in that order, so
-# that comments inside code are never treated as comments.
+# Fenced code blocks and inline code, in that order, so that any content inside
+# them (comments, image references) is never processed.
+CODE_PATTERN = MULTI_LINE_CODE_PATTERN.pattern + '|' + SINGLE_LINE_CODE_PATTERN.pattern
+
+# Matches code and HTML comments, so that comments inside code are never
+# treated as comments.
 CODE_OR_COMMENT_PATTERN = re.compile(
-    MULTI_LINE_CODE_PATTERN.pattern
-    + '|' + SINGLE_LINE_CODE_PATTERN.pattern
+    CODE_PATTERN
     + '|(?P<comment>' + HTML_COMMENT.pattern + ')',
+    re.MULTILINE)
+
+# Matches code and image references, so that images inside code are never
+# embedded. The 'url' group only participates when an image matches.
+CODE_OR_IMAGE_PATTERN = re.compile(
+    CODE_PATTERN
+    + '|' + IMAGE_PATTERN.pattern,
     re.MULTILINE)
 
 ##
@@ -875,9 +885,9 @@ class XMLExporter(QuizExporter):
 
         text = self._remove_html_comments(text)
 
+        text = self._replace_images(text, md_dir_path)
         text = re.sub(MULTI_LINE_CODE_PATTERN, self._replace_multi_line_code, text)
         text = re.sub(SINGLE_LINE_CODE_PATTERN, self._replace_single_line_code, text)
-        text = re.sub(IMAGE_PATTERN, self._replace_image_wrapper(md_dir_path), text)
         text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, self._replace_latex_double_dollars, text)
         text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, self._replace_latex, text)
         text = re.sub(TABLE_PATTERN, self._replace_table, text)
@@ -944,6 +954,9 @@ class XMLExporter(QuizExporter):
         """
         code = match.group(1)
         code = self._sanitize_entities(code)
+        # Escape brackets so markdown does not turn link/image syntax inside
+        # inline code into <a>/<img> elements.
+        code = code.replace('[', r'\[').replace(']', r'\]')
 
         return '<code>' + code + '</code>'
 
@@ -964,13 +977,16 @@ class XMLExporter(QuizExporter):
             code = self._sanitize_entities(code)
             return '<pre><code>' + code + '</code></pre>'
 
-    def _replace_image_wrapper(self, md_dir_path):
+    def _replace_images(self, text, md_dir_path):
+        """Embeds images as base64 <img> tags, skipping code spans/blocks."""
         def replace_image(match):
-            file_name = match.group(1)
-            if (not os.path.isabs(file_name)) and ('://' not in file_name):
-                file_name = os.path.join(md_dir_path, file_name)
-            return self._build_image_tag(file_name)
-        return replace_image
+            url = match.group('url')
+            if url is None:
+                return match.group(0)  # code span/block, left untouched
+            if (not os.path.isabs(url)) and ('://' not in url):
+                url = os.path.join(md_dir_path, url)
+            return self._build_image_tag(url)
+        return CODE_OR_IMAGE_PATTERN.sub(replace_image, text)
 
     def _build_image_tag(self, file_name):
         extension = file_name.split('.')[-1]

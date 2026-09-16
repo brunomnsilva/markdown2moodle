@@ -253,3 +253,15 @@ Which of the following is a valid HTML comment?
 - `<!--- This is a comment --->`
 - `// This is a comment`
 - `# This is a comment`
+
+---
+
+What does the following *markdown* snippet render to?
+
+```markdown
+![](images/circle.png)
+```
+
+- !The literal text, i.e., the image reference is not embedded
+- The image `images/circle.png` embedded in the output
+- Nothing
