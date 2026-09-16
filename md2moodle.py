@@ -674,6 +674,9 @@ class QuizExporter(ABC):
         # copy reference of quiz config
         self.config = quiz.config
 
+        # directory of the source markdown file, used to resolve relative assets
+        self.md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
+
     @abstractmethod
     def export(self, output_path="."):
         pass
@@ -707,15 +710,13 @@ class XMLExporter(QuizExporter):
     
     def _export_xml_to_file(self, output_path):
         """Produces the XML file outputs; one for each specified category in the md file."""
-      
-        md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
 
         for section_caption in self.quiz:
             section = self.quiz[section_caption]
             xml_file = open(self._create_output_filename(self.quiz.source, section_caption, output_path), 'w')
 
             # Prettify xml
-            tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section, md_dir_path))
+            tmp = xml.dom.minidom.parseString(self._section_to_xml(section_caption, section))
             xml_file.write(tmp.toprettyxml())
 
     def _create_output_filename(self, md_file_name, section_caption, output_path=None):
@@ -744,13 +745,12 @@ class XMLExporter(QuizExporter):
         # Join directory + filename
         return os.path.join(output_path, output_file_name)
 
-    def _section_to_xml(self, section_caption, section, md_dir_path):
+    def _section_to_xml(self, section_caption, section):
         """Convert a parsed section to XML
 
         Keyword arguments:
         section_caption -- Title of section (used to assign category)
         section -- dictionary mapped content from 'md_script_to_dictionary'
-        md_dir_path -- path of the markdown file
         """
 
         xml = '<?xml version="1.0" ?><quiz>'
@@ -760,12 +760,12 @@ class XMLExporter(QuizExporter):
         
         #add parsed questions
         for question in section:
-            xml += self._question_to_xml(question, md_dir_path)
+            xml += self._question_to_xml(question)
         xml += '</quiz>'
         return xml
 
 
-    def _question_to_xml(self, question, md_dir_path):
+    def _question_to_xml(self, question):
         """
         Converts a parsed question to XML.
 
@@ -775,7 +775,7 @@ class XMLExporter(QuizExporter):
         """
 
         #convert question text to CDATA html
-        rendered_question_text = self._render_question(question['text'], md_dir_path)
+        rendered_question_text = self._render_question(question['text'])
 
         question_single_status = ('true' if question['single'] else 'false')
         
@@ -879,13 +879,13 @@ class XMLExporter(QuizExporter):
 
         return self._wrap_cdata( markdown( text ) ) 
 
-    def _render_question(self, text, md_dir_path):
+    def _render_question(self, text):
         """Replaces any allowed contents, e.g., code and images
         and returns the CDATA content."""
 
         text = self._remove_html_comments(text)
 
-        text = self._replace_images(text, md_dir_path)
+        text = self._replace_images(text)
         text = re.sub(MULTI_LINE_CODE_PATTERN, self._replace_multi_line_code, text)
         text = re.sub(SINGLE_LINE_CODE_PATTERN, self._replace_single_line_code, text)
         text = re.sub(DOUBLE_DOLLAR_LATEX_PATTERN, self._replace_latex_double_dollars, text)
@@ -977,14 +977,14 @@ class XMLExporter(QuizExporter):
             code = self._sanitize_entities(code)
             return '<pre><code>' + code + '</code></pre>'
 
-    def _replace_images(self, text, md_dir_path):
+    def _replace_images(self, text):
         """Embeds images as base64 <img> tags, skipping code spans/blocks."""
         def replace_image(match):
             url = match.group('url')
             if url is None:
                 return match.group(0)  # code span/block, left untouched
             if (not os.path.isabs(url)) and ('://' not in url):
-                url = os.path.join(md_dir_path, url)
+                url = os.path.join(self.md_dir_path, url)
             return self._build_image_tag(url)
         return CODE_OR_IMAGE_PATTERN.sub(replace_image, text)
 
