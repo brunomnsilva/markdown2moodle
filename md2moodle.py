@@ -33,7 +33,6 @@ import os
 import sys
 import re
 import hashlib
-import random
 import json
 import base64
 from abc import abstractmethod, ABC
@@ -351,6 +350,37 @@ class Quiz(dict):
                             answer['weight'] = self.config['single_answer_penalty_weight'] * -1
                         else:
                             answer['weight'] = 0
+
+        self._assign_question_names()
+
+    def _assign_question_names(self):
+        """Assigns a deterministic name to every question and ensures uniqueness.
+
+        Names are derived from the question text, so re-exporting the same
+        document yields stable names. The quiz is invalid if two questions
+        share the same name (globally, across all categories).
+        """
+        seen = {}  # name -> (category, question text)
+
+        for category in self:
+            for question in self[category]:
+                # Normalize surrounding whitespace so that cosmetic blank lines
+                # do not change a question's name.
+                name = hashlib.md5(question['text'].strip().encode('utf-8')).hexdigest()
+
+                if name in seen:
+                    prev_category, prev_text = seen[name]
+                    self.is_valid = False
+                    raise QuizError(
+                        "Duplicate question name '%s' in categories '%s' and '%s':\n"
+                        "  - %s\n"
+                        "  - %s"
+                        % (name, prev_category, category,
+                           ' '.join(prev_text.split())[:80],
+                           ' '.join(question['text'].split())[:80]))
+
+                seen[name] = (category, question['text'])
+                question['name'] = name
 
 
 ######################################################################
@@ -719,17 +749,17 @@ class XMLExporter(QuizExporter):
         xml += '<question type="category"><category><text>' + section_caption + '</text></category></question>'
         
         #add parsed questions
-        for index, question in enumerate(section):
-            xml += self._question_to_xml(question, index, md_dir_path)
+        for question in section:
+            xml += self._question_to_xml(question, md_dir_path)
         xml += '</quiz>'
         return xml
 
 
-    def _question_to_xml(self, question, index, md_dir_path):
+    def _question_to_xml(self, question, md_dir_path):
         """
         Converts a parsed question to XML.
 
-        <name> is automatically generated from a hash (question text + rand)
+        <name> is the deterministic name assigned during quiz validation
         <single> is derived from correct answers (1/0)
         <questiontext> is encoded in CDATA and html format
         """
@@ -737,15 +767,11 @@ class XMLExporter(QuizExporter):
         #convert question text to CDATA html
         rendered_question_text = self._render_question(question['text'], md_dir_path)
 
-        index_part = str(index + 1).rjust(4, '0')
-        q_part = (question['text'] + str(random.random())).encode('utf-8')
         question_single_status = ('true' if question['single'] else 'false')
         
         xml = '<question type="multichoice">'
         # question name
-        xml += '<name><text>'
-        xml += index_part + hashlib.md5(q_part).hexdigest()
-        xml += '</text></name>'
+        xml += '<name><text>' + question['name'] + '</text></name>'
         # question text
         xml += '<questiontext format="html"><text>'
         xml += rendered_question_text
