@@ -234,7 +234,7 @@ If other packages are required in your system, you should be able to discern whi
 Just run the script against your markdown file, e.g.:
 
 ```markdown
-$> python md2moodle.py example.md
+$> python3 md2moodle.py example.md
 ```
 
 This will produce the corresponding *Moodle XML* files, one per each category or subcategory specified in the *markdown* file.

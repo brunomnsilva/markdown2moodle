@@ -1,4 +1,6 @@
-# Markdown to Moodle XML 
+#!/usr/bin/env python3
+
+# Markdown to Moodle XML
 #
 # This script parses a markdown file (containing quizes) and outputs Moodle's XML Quiz format.
 #
@@ -23,11 +25,11 @@
 # This script is organized into the following sections:
 #
 # Section 0 - Global constants
-# Section 1 - REGEX patterns, helpers and transformations over text 
+# Section 1 - REGEX patterns, helpers and transformations over text
 # Section 2 - Quiz class, helper functions and constants
 # Section 3 - FSM implementation
 # Section 4 - FSM Markdown Parser
-# Section 5 - Main 
+# Section 5 - Main
 
 import os
 import sys
@@ -72,7 +74,7 @@ class Configuration(dict):
             # quiz shuffle answers ?
             'shuffle_answers': True,
             # in single answer questions, the penalty weight for wrong answer [0, 1] -
-            'single_answer_penalty_weight': 0,  # e.g., 0.25 means -25% penalty 
+            'single_answer_penalty_weight': 0,  # e.g., 0.25 means -25% penalty
             # pygments code snapshot generator
             # Font used to render code-block images. An empty string uses
             # Pygments' platform default (DejaVu Sans Mono on Linux). If the
@@ -102,7 +104,7 @@ class Configuration(dict):
 
 
 ######################################################################
-# Section 1 - REGEX patterns, helpers and transformations over text 
+# Section 1 - REGEX patterns, helpers and transformations over text
 ######################################################################
 
 ##
@@ -177,7 +179,7 @@ def is_correct_answer(string):
     return False if get_correct_answer(string) is None else True
 
 def is_feedback(string):
-    return False if get_answer_feedback(string) is None else True 
+    return False if get_answer_feedback(string) is None else True
 
 def is_wrong_answer(string):
     return False if get_wrong_answer(string) is None else True
@@ -191,7 +193,7 @@ def is_blockcode(string):
 def is_eof(string):
     return string == "EOF"
 
-## 
+##
 # REGEX matching  and grouping
 
 def get_header(string):
@@ -203,7 +205,7 @@ def get_header(string):
 def get_question(string):
     match = re.match(QUESTION_PATTERN, string)
     if match:
-        # Quirk: we allow content right after "---" 
+        # Quirk: we allow content right after "---"
         content = match.group(1)
         return content if content else ""
 
@@ -239,8 +241,8 @@ class QuizError(Exception):
 class Quiz(dict):
     def __init__(self, *args, config, default=None, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        self.section = [] 
+
+        self.section = []
         self.current_question = {}
         self.config = config
 
@@ -259,7 +261,7 @@ class Quiz(dict):
         """Starts a new question with no content yet."""
 
         self.current_question = {
-            'text': "", 
+            'text': "",
             'answers': []
             }
         self.section.append(self.current_question)
@@ -268,12 +270,12 @@ class Quiz(dict):
         """Starts a new question with this content."""
 
         self.current_question = {
-            'text': get_question(line), 
+            'text': get_question(line),
             'answers': []
             }
         self.section.append(self.current_question)
 
-    def append_to_question(self, line): 
+    def append_to_question(self, line):
         """Appends content to current question."""
 
         #TODO: there's a problem enforcing line breaks in the output?
@@ -291,7 +293,7 @@ class Quiz(dict):
                 'correct': True,
                 'feedback': None
                 }
-            
+
             self.current_question['answers'].append(current_answer)
 
         elif is_wrong_answer(line):
@@ -301,7 +303,7 @@ class Quiz(dict):
                 'correct': False,
                 'feedback': None
                 }
-            
+
             self.current_question['answers'].append(current_answer)
 
         else:
@@ -309,7 +311,7 @@ class Quiz(dict):
             pass
 
     def consume_feedback(self, line):
-        # Add current feedback to the last parsed answer. 
+        # Add current feedback to the last parsed answer.
         # Feedbacks are provided per-answer.
         cur_answer = self.current_question['answers'][-1]
         cur_answer['feedback'] = get_answer_feedback(line)
@@ -317,13 +319,13 @@ class Quiz(dict):
     def current_question_has_correct_answers(self):
         correct_answers = [x for x in self.current_question['answers'] if x['correct']]
         correct_answer_count = len(correct_answers)
-        
+
         return (correct_answer_count >= 1)
 
     def validate(self):
         """Must call after successful parse of document."""
         self._complete()
-        self.is_valid = True        
+        self.is_valid = True
 
     def _complete(self):
         """Completes parsed information with 'fraction' values for answers."""
@@ -333,7 +335,7 @@ class Quiz(dict):
             for question in section:
                 correct_answers = [x for x in question['answers'] if x['correct']]
                 correct_answer_count = len(correct_answers)
-                
+
                 if correct_answer_count < 1:
                     self.is_valid = False
                     raise QuizError("No correct answer(s) for %s" % (question['text']))
@@ -397,7 +399,7 @@ class TransitionError(Exception):
 
 class StateMachine:
     """
-    Provides the definition of a finite state machine in python that 
+    Provides the definition of a finite state machine in python that
     enables to change state and run a parsed line within that state,
     i.e., the FSM will run a delegate function according to its current
     state.
@@ -417,7 +419,7 @@ class StateMachine:
 
     def set_start(self, name):
         """Sets the start state (name).
-        The state must have been previously added through 'add_state' method. 
+        The state must have been previously added through 'add_state' method.
         """
         self.state = name.upper()
 
@@ -430,9 +432,9 @@ class StateMachine:
             raise InitializationError("no start state defined.")
         if not self.endStates:
             raise  InitializationError("no end state defined.")
-    
+
         logging.debug(f"[StateMachine]: In state {self.state} | Processing: {line_text}")
-        
+
         newState = handler(quest, line_text, line_number)
         self.state = newState.upper()
 
@@ -467,7 +469,7 @@ class MarkdownParser(StateMachine):
         if not os.path.isfile(md_file_name):
             raise FileNotFoundError(f"Markdown file not found: {md_file_name}")
 
-        # Set start state 
+        # Set start state
         self.set_start("start")
 
         with open(md_file_name, "r") as md_file:
@@ -476,23 +478,23 @@ class MarkdownParser(StateMachine):
         # Split into lines and put "EOF" at the end
         md_lines = md_script.split(NEW_LINE)
         md_lines.append("EOF")
-        
+
         # Parse file contents line-wise
         line_number = 1
         try:
             for md_row in md_lines:
                 md_row = md_row.rstrip('\r')
                 md_row = md_row.rstrip('\n')
-                
+
                 self.run(self.quiz, md_row, line_number)
 
                 line_number += 1
-            
+
         except TransitionError as e:
             logging.error("Error at line %d: %s." % (line_number, e))
             quiz = None
 
-    
+
     ##
     # FSM State handlers - These implement the transitions and their actions
     #
@@ -502,7 +504,7 @@ class MarkdownParser(StateMachine):
 
     @staticmethod
     def _state_start(quiz, line_text, line_number):
-        
+
         if is_blank(line_text):
             state = "start"
         elif is_header(line_text):
@@ -518,7 +520,7 @@ class MarkdownParser(StateMachine):
 
     @staticmethod
     def _state_parse_header(quiz, line_text, line_number):
-        
+
         if is_blank(line_text):
             # do nothing
             state = "parse_header"
@@ -555,7 +557,7 @@ class MarkdownParser(StateMachine):
             raise TransitionError("Expecting text, codeblock or answer")
         else:
             quiz.append_to_question(line_text)
-            state  = "parse_question"            
+            state  = "parse_question"
 
         return state
 
@@ -614,7 +616,7 @@ class MarkdownParser(StateMachine):
     def _state_feedback(quiz, line_text, line_number):
         if is_blank(line_text):
             # do nothing
-            state = "parse_feedback"    
+            state = "parse_feedback"
         elif is_answer(line_text):
             quiz.consume_answer(line_text)
             state = "parse_answer"
@@ -649,16 +651,16 @@ class MarkdownParser(StateMachine):
 
 ######################################################################
 # Section 5 - QuizExporters
-######################################################################    
+######################################################################
 
 class QuizExporter(ABC):
     def __init__(self, quiz):
         if not quiz:
             raise ValueError("Quiz cannot be None.")
-        
+
         if not quiz.is_valid:
             raise ValueError("Quiz is not valid. Cannot be exported.")
-        
+
         self.quiz = quiz
 
         # copy reference of quiz config
@@ -683,7 +685,7 @@ class QuizExporter(ABC):
 
 #     def export(self, output_path="."):
 #         logging.info("DOCX file successfully generated!")
-        
+
 
 class XMLExporter(QuizExporter):
     def __init__(self, quiz):
@@ -694,10 +696,10 @@ class XMLExporter(QuizExporter):
         self._export_xml_to_file(output_path)
 
         logging.info("XML file(s) successfully generated!")
-    
+
     def _export_xml_to_file(self, output_path):
         """Produces the XML file outputs; one for each specified category in the md file."""
-      
+
         md_dir_path = os.path.dirname(os.path.abspath(self.quiz.source))
 
         for section_caption in self.quiz:
@@ -744,10 +746,10 @@ class XMLExporter(QuizExporter):
         """
 
         xml = '<?xml version="1.0" ?><quiz>'
-        
+
         #create dummy question to specify category for questions
         xml += '<question type="category"><category><text>' + section_caption + '</text></category></question>'
-        
+
         #add parsed questions
         for question in section:
             xml += self._question_to_xml(question, md_dir_path)
@@ -768,7 +770,7 @@ class XMLExporter(QuizExporter):
         rendered_question_text = self._render_question(question['text'], md_dir_path)
 
         question_single_status = ('true' if question['single'] else 'false')
-        
+
         xml = '<question type="multichoice">'
         # question name
         xml += '<name><text>' + question['name'] + '</text></name>'
@@ -779,7 +781,7 @@ class XMLExporter(QuizExporter):
         # answer
         for answer in question['answers']:
             xml += self._answer_to_xml(answer)
-        
+
         # other properties
         shuffleValue = "1" if self.config['shuffle_answers'] else "0"
 
@@ -800,7 +802,7 @@ class XMLExporter(QuizExporter):
 
         xml = '<answer fraction="'+str(answer['weight'])+'">'
         xml += '<text>'+text+'</text>'
-        
+
         if answer['feedback']:
             # we allow formulas and tex in the feedback, so
             # use the existing answer rendering function
@@ -822,8 +824,8 @@ class XMLExporter(QuizExporter):
         text = text.replace('&','&amp;')
         text = text.replace('>','&gt;')
         text = text.replace('<','&lt;')
-        text = text.replace('*','&ast;')    
-            
+        text = text.replace('*','&ast;')
+
         return text
 
     def _sanitize_moodle_emoticons(self, text: str) -> str:
@@ -855,7 +857,7 @@ class XMLExporter(QuizExporter):
             offset += len(sanitized) - len(original)
 
         return result
-    
+
     def _render_answer(self, text):
         """Replaces any allowed contents, e.g., text, inline code and formulas
         and returns the CDATA content."""
@@ -867,7 +869,7 @@ class XMLExporter(QuizExporter):
 
         text = self._sanitize_moodle_emoticons(text)
 
-        return self._wrap_cdata( markdown( text ) ) 
+        return self._wrap_cdata( markdown( text ) )
 
     def _render_question(self, text, md_dir_path):
         """Replaces any allowed contents, e.g., code and images
@@ -882,7 +884,7 @@ class XMLExporter(QuizExporter):
         text = re.sub(SINGLE_DOLLAR_LATEX_PATTERN, self._replace_latex, text)
         text = re.sub(TABLE_PATTERN, self._replace_table, text)
 
-        text = self._sanitize_moodle_emoticons(text)        
+        text = self._sanitize_moodle_emoticons(text)
 
         text = self._wrap_cdata( self._markdown_custom(text) )
         return text
@@ -890,7 +892,7 @@ class XMLExporter(QuizExporter):
     def _markdown_custom(self, text):
         """Just calls markdown, but may be extended in the future."""
         return markdown(text)
-    
+
     def _replace_table(self, match):
         content = match.group(2)
 
@@ -953,7 +955,7 @@ class XMLExporter(QuizExporter):
 
         if not lexer:
             lexer = ''
-        
+
         to_image = True if lexer.find('{img}') > 0 else False
 
         if to_image:
@@ -985,7 +987,7 @@ class XMLExporter(QuizExporter):
 
     def _convert_code_image_base64(self, lexer_name, code):
         """Converts a code snippet to an image in base64 format."""
-        
+
         from pygments import highlight
         from pygments.lexers import get_lexer_by_name
         from pygments.formatters import ImageFormatter
@@ -1009,7 +1011,7 @@ class XMLExporter(QuizExporter):
             imgFile = './' + str(img_id) + '.png'
             with open(imgFile, 'wb') as imageOut:
                 imageOut.write(imgBytes)
-            
+
             img_id += 1
             self.config['pygments.dump_image_id'] = img_id
 
@@ -1020,7 +1022,7 @@ class XMLExporter(QuizExporter):
         extension = 'png'
         base64_image = (base64.b64encode(temp.read())).decode('utf-8')
         src_part = 'data:image/' + extension + ';base64,' + base64_image
-        
+
         temp.close()
         return '<img style="display:block;" src="' + src_part + '" />'
 
@@ -1039,7 +1041,7 @@ if __name__ == '__main__':
     logging.basicConfig(
         format="{levelname}: {message}",
         style="{",
-        level=logging.INFO # INFO, WARNING, DEBUG 
+        level=logging.INFO # INFO, WARNING, DEBUG
     )
 
     md_file_name = sys.argv[1]
@@ -1050,7 +1052,7 @@ if __name__ == '__main__':
             #'pygments.font_size' : 14,
             #'pygments.font_name' : 'JetBrainsMono Nerd Font'
             #'shuffle_answers' : False,
-            #'table_border' : True,             
+            #'table_border' : True,
         })
 
         # Create the quiz instance with configuration
@@ -1059,7 +1061,7 @@ if __name__ == '__main__':
         # Create parser instance and parse document into quiz instance
         parser = MarkdownParser(quiz)
         parser.parse(md_file_name)
-        
+
         # Create exporter instance and export quiz
         exporter = XMLExporter(quiz)
         exporter.export("./out/")
@@ -1069,4 +1071,4 @@ if __name__ == '__main__':
         print(f"Exception: {e}")
         # Uncomment the next line during development for a full traceback:
         # traceback.print_exc()
-    
+
