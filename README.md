@@ -129,7 +129,7 @@ How to get the imaginary component of the complex number `a`?
 
 Consider the following two approaches for implementing the **ADT Stack** using an *array list*:
 
-![](stack_arraylist.png)
+![](images/stack_arraylist.png)
 
 Which one would you choose for better eficiency?
 
