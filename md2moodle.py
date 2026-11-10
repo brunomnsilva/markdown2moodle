@@ -1047,9 +1047,9 @@ class XMLExporter(QuizExporter):
 
 if __name__ == '__main__':
     # very basic argument usage
-    if len(sys.argv) > 3:
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
         print("Usage details: python3 md2moodle.py <md_file> [stdout]")
-        sys.exit()
+        sys.exit(2)
 
     # Configure log messages
     logging.basicConfig(
@@ -1085,4 +1085,5 @@ if __name__ == '__main__':
         print(f"Exception: {e}")
         # Uncomment the next line during development for a full traceback:
         # traceback.print_exc()
+        sys.exit(1)
     
